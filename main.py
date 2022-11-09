@@ -1,6 +1,5 @@
 import config as cfg
 import aiogram as a
-# from aiogram.utils.emoji import emojize
 import logging
 from db import BotDB
 from aiogram.dispatcher.filters.state import State, StatesGroup
@@ -11,27 +10,16 @@ bot = a.Bot(token=cfg.TOKEN, parse_mode="HTML")
 BotDB = BotDB('db.db')
 dp = a.Dispatcher(bot, storage=MemoryStorage())
 logging.basicConfig(level=logging.INFO)
-
-admin_id = 575770908
-start_mess = 'Приветствую тебя, пользователь!\nЭто неофициальный бот Московского Политеха, который поможет тебе не' \
-             'потеряться в 4 стенах :)\nТакже не забудь подписаться на канал Московского Политеха: \nt.me/mospolytech'
+start_mess = 'Приветствую тебя, пользователь!\nЭто неофициальный бот Московского Политеха, который поможет тебе не ' \
+             'потеряться в 4 стенах :)\nТакже не забудь подписаться на группу Московского Политеха: \nt.me/mospolytech '
 
 
-class NewIdea(StatesGroup):
-    text = State()
-
-
-class Marshrut(StatesGroup):
-    point_a = State()
-    point_b = State()
-
-
-class Pr_marshrut(StatesGroup):
+class PrNavigation(StatesGroup):
     pr_point_b = State()
 
 
-class Bs_marshrut(StatesGroup):
-    bs_point_b_vhod = State()
+class BsNavigation(StatesGroup):
+    bs_point_b_input = State()
     bs_point_b_audit = State()
 
 
@@ -39,9 +27,9 @@ start_buttons = ["🔻Маршрут", "📖Полезная информаци�
 start_keyboard = a.types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
 start_keyboard.add(*start_buttons)
 
-marshrut_buttons = ["Большая Семёновская (БС)", "↪️Назад"]
-marshrut_keyboard = a.types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-marshrut_keyboard.add(*marshrut_buttons)
+navigation_buttons = ["Большая Семёновская (БС)", "↪️Назад"]
+navigation_keyboard = a.types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+navigation_keyboard.add(*navigation_buttons)
 
 
 @dp.message_handler(commands='start')
@@ -54,9 +42,9 @@ async def start(mess: a.types.Message):
 
 
 @dp.message_handler(lambda message: message.text == "🔻Маршрут")
-async def marshrut(mess: a.types.Message):
+async def navigation(mess: a.types.Message):
     await mess.bot.delete_message(mess.from_user.id, mess.message_id)
-    await mess.bot.send_message(mess.from_user.id, 'Выберите корпус', reply_markup=marshrut_keyboard)
+    await mess.bot.send_message(mess.from_user.id, 'Выберите корпус', reply_markup=navigation_keyboard)
 
 
 @dp.message_handler(lambda message: message.text == "↪️Назад")
@@ -105,72 +93,17 @@ async def info(mess: a.types.Message):
         'и идти пешком вдоль пруда 7 минут;\n' \
         '- от станции метро «Селигерская» на автобусах 591, 179 до ост. «Михалковская улица» (15–20 минут), ' \
         'далее пешком 8 минут вдоль пруда.\n '
-
     await mess.bot.delete_message(mess.from_user.id, mess.message_id)
     await mess.bot.send_message(mess.from_user.id, a)
 
-
-"""Новая идея"""
-
-
-@dp.message_handler(lambda message: message.text == "🆕Предложить идею", state=None)
-async def new_idea(mess: a.types.Message):
-    await mess.bot.delete_message(mess.from_user.id, mess.message_id)
-    ideas = BotDB.cursor.execute("SELECT * FROM `ideas` WHERE `user_id` = ? AND `status` = ?",
-                                 (mess.from_user.id, 'wait')).fetchall()
-    if len(ideas) == 0:
-        await mess.bot.send_message(mess.from_user.id, 'Напишите то, что хотели бы добавить в Нашего бота')
-        await NewIdea.text.set()
-    else:
-        await mess.bot.send_message(mess.from_user.id, "Вашу прошлую идею ещё не рассмотрели!")
-
-
-@dp.message_handler(state=NewIdea.text)
-async def new_idea_text(mess: a.types.Message, state: FSMContext):
-    buttons = [
-        a.types.InlineKeyboardButton(text="✅Одобрить", callback_data=f"new_idea_yes_{mess.from_user.id}"),
-        a.types.InlineKeyboardButton(text="❌Отказать", callback_data=f"new_idea_no_{mess.from_user.id}"),
-    ]
-    keyboard = a.types.InlineKeyboardMarkup(row_width=2)
-    keyboard.add(*buttons)
-    BotDB.add_idea(mess.from_user.id, mess.from_user.full_name, mess.text)
-    await mess.bot.send_message(mess.from_user.id, 'Спасибо за Вашу идею!\nСотрудник скоро рассмотрит Ваше предложение')
-    await mess.bot.send_message(admin_id, f'Пользователь {mess.from_user.full_name} предложил новую идею!\n{mess.text}',
-                                reply_markup=keyboard)
-    await state.finish()
-
-
-@dp.callback_query_handler(lambda call: call.data.startswith('new_idea_yes_'))
-async def new_idea_yes(call: a.types.CallbackQuery):
-    id = call.data[13:]
-    BotDB.cursor.execute("UPDATE `ideas` SET `status` = ? WHERE `user_id` = ? AND `status` = ?", ('yes', id, 'wait'))
-    BotDB.conn.commit()
-    await call.bot.edit_message_reply_markup(chat_id=call.from_user.id, message_id=call.message.message_id,
-                                             reply_markup=None)
-    await call.message.edit_text(f'{call.message.text}\n✅Одобрено')
-    await call.bot.send_message(id, 'Вашу идею одобрили!')
-
-
-@dp.callback_query_handler(lambda call: call.data.startswith('new_idea_no_'))
-async def new_idea_no(call: a.types.CallbackQuery):
-    id = call.data[12:]
-    BotDB.cursor.execute("UPDATE `ideas` SET `status` = ? WHERE `user_id` = ? AND `status` = ?", ('no', id, 'wait'))
-    BotDB.conn.commit()
-    await call.bot.edit_message_reply_markup(chat_id=call.from_user.id, message_id=call.message.message_id,
-                                             reply_markup=None)
-    await call.message.edit_text(f'{call.message.text}\n❌Отказано')
-    await call.bot.send_message(id, 'Вашу идею отклонили!')
-
-
-"""Новая идея"""
 
 """Пряники"""
 
 
 @dp.message_handler(lambda message: message.text == "Прянишникова (ПР)", state=None)
-async def pr_marshrut(mess: a.types.Message):
+async def pr_navigation(mess: a.types.Message):
     buttons = [
-        a.types.InlineKeyboardButton(text="Вход", callback_data="pr_vhod"),
+        a.types.InlineKeyboardButton(text="Вход", callback_data="pr_input"),
         a.types.InlineKeyboardButton(text="Аудитория", callback_data="pr_audit"),
     ]
     keyboard = a.types.InlineKeyboardMarkup(row_width=2)
@@ -179,53 +112,33 @@ async def pr_marshrut(mess: a.types.Message):
     await mess.bot.send_message(mess.from_user.id, 'Выберите начало маршрута', reply_markup=keyboard)
 
 
-@dp.callback_query_handler(text='pr_vhod', state=None)
-async def pr_marshrut_vhod(call: a.types.CallbackQuery):
+@dp.callback_query_handler(text='pr_input', state=None)
+async def pr_navigation_input(call: a.types.CallbackQuery):
     await call.message.delete()
     await call.bot.send_message(call.from_user.id, 'Введите номер нужной Вам аудитории')
-    await Pr_marshrut.pr_point_b.set()
+    await PrNavigation.pr_point_b.set()
 
 
-@dp.callback_query_handler(state=Pr_marshrut.pr_point_b)
-async def pr_marshrut_vhod_next(mess: a.types.Message, state: FSMContext):
+@dp.callback_query_handler(state=PrNavigation.pr_point_b)
+async def pr_nav_input_next(mess: a.types.Message, state: FSMContext):
     await state.finish()
 
 
 @dp.callback_query_handler(text='pr_audit', state=None)
-async def pr_marshrut_audit(call: a.types.CallbackQuery):
+async def pr_navigation_audit(call: a.types.CallbackQuery):
     await call.message.delete()
 
 
 """Пряники"""
 
-"""Автозаводская"""
-
-
-@dp.message_handler(lambda message: message.text == "Автозаводская (АВ)", state=None)
-async def av_marshrut(mess: a.types.Message):
-    await mess.bot.delete_message(mess.from_user.id, mess.message_id)
-
-
-"""Автозаводская"""
-
-"""Павла Корчагина"""
-
-
-@dp.message_handler(lambda message: message.text == "Павла Корчагина (ПК)", state=None)
-async def pk_marshrut(mess: a.types.Message):
-    await mess.bot.delete_message(mess.from_user.id, mess.message_id)
-
-
-"""Павла Корчагина"""
-
 """Большая Семён"""
 
 
 @dp.message_handler(lambda message: message.text == "Большая Семёновская (БС)", state=None)
-async def bs_marshrut(mess: a.types.Message):
+async def bs_navigation(mess: a.types.Message):
     await mess.bot.delete_message(mess.from_user.id, mess.message_id)
     buttons = [
-        a.types.InlineKeyboardButton(text="Вход", callback_data="bs_vhod"),
+        a.types.InlineKeyboardButton(text="Вход", callback_data="bs_input"),
         a.types.InlineKeyboardButton(text="Аудитория", callback_data="bs_audit"),
     ]
     keyboard = a.types.InlineKeyboardMarkup(row_width=2)
@@ -233,21 +146,22 @@ async def bs_marshrut(mess: a.types.Message):
     await mess.bot.send_message(mess.from_user.id, 'Выберите начало маршрута', reply_markup=keyboard)
 
 
-@dp.callback_query_handler(text='bs_vhod', state=None)
-async def bs_marsh_vhod(call: a.types.CallbackQuery):
+@dp.callback_query_handler(text='bs_input', state=None)
+async def bs_nav_input(call: a.types.CallbackQuery):
     await call.message.delete()
     await call.bot.send_message(call.from_user.id, 'Введите номер нужной Вам аудитории')
-    await Bs_marshrut.bs_point_b_vhod.set()
+    await BsNavigation.bs_point_b_input.set()
 
 
-@dp.message_handler(state=Bs_marshrut.bs_point_b_vhod)
-async def bs_marsh_vhod_next(mess: a.types.Message, state: FSMContext):
+@dp.message_handler(state=BsNavigation.bs_point_b_input)
+async def bs_nav_input_next(mess: a.types.Message, state: FSMContext):
     text = mess.text
     campus_letters = ["А", "В", "Б", "Н"]
     travel = ""
     if (len(text) != 4) or (text[0] not in campus_letters) or (int(text[1]) > 4):
         await mess.bot.send_message(mess.from_user.id, "Неверная аудитория. Начните заново")
     else:
+        travel += "1. Пройдите к аудитории, показанной на карте"
         match text[0]:
             case "А":
                 pass
@@ -257,7 +171,6 @@ async def bs_marsh_vhod_next(mess: a.types.Message, state: FSMContext):
                 pass
             case "Н":
                 pass
-        travel += "1. Пройдите к аудитории, показанной на карте"
     await mess.bot.send_message(mess.from_user.id, travel)
     await state.finish()
 
@@ -267,7 +180,7 @@ async def bs_marsh_audit(call: a.types.CallbackQuery):
     pass
 
 
-@dp.message_handler(state=Bs_marshrut.bs_point_b_audit)
+@dp.message_handler(state=BsNavigation.bs_point_b_audit)
 async def bs_marsh_audit_next(mess: a.types.Message, state: FSMContext):
     pass
 
@@ -275,4 +188,6 @@ async def bs_marsh_audit_next(mess: a.types.Message, state: FSMContext):
 """Большая Семён"""
 
 if __name__ == "__main__":
+    from handlers import dp
+
     a.executor.start_polling(dp, skip_updates=False)
