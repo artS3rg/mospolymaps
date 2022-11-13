@@ -22,13 +22,13 @@ async def start(mess: a.types.Message):
         await mess.bot.send_message(mess.from_user.id, 'Добро пожаловать!', reply_markup=k.start_keyboard)
 
 
-@dp.message_handler(lambda message: message.text == "🗺Навигатор")
+@dp.message_handler(lambda message: message.text == "🗺 Навигатор")
 async def navigation(mess: a.types.Message):
     await mess.bot.delete_message(mess.from_user.id, mess.message_id)
     await mess.bot.send_message(mess.from_user.id, 'Выберите корпус', reply_markup=k.navigation_keyboard)
 
 
-@dp.message_handler(lambda message: message.text == "❓FAQ")
+@dp.message_handler(lambda message: message.text == "❓ FAQ")
 async def info(mess: a.types.Message):
     a = '🔸<b>Адрес кампуса на Большой Семёновской:</b>\n' \
         'учебные корпуса «А», «Б», «В», «Н», «НД»\n' \
@@ -72,7 +72,7 @@ async def info(mess: a.types.Message):
     await mess.bot.send_message(mess.from_user.id, a)
 
 
-@dp.message_handler(lambda message: message.text == "🏠Главная")
+@dp.message_handler(lambda message: message.text == "🏠 Главная")
 async def back_home(mess: a.types.Message):
     await mess.bot.delete_message(mess.from_user.id, mess.message_id)
     await mess.bot.send_message(mess.from_user.id, 'Главный раздел', reply_markup=k.start_keyboard)

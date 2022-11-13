@@ -9,7 +9,7 @@ class NewIdea(StatesGroup):
     text = State()
 
 
-@dp.message_handler(lambda message: message.text == "🆕Предложить идею", state=None)
+@dp.message_handler(lambda message: message.text == "🆕 Предложить идею", state=None)
 async def new_idea(mess: types.Message) -> None:
     await mess.bot.delete_message(mess.from_user.id, mess.message_id)
     ideas = BotDB.cursor.execute("SELECT * FROM `ideas` WHERE `user_id` = ? AND `status` = ?",
