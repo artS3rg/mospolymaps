@@ -24,8 +24,8 @@ async def new_idea(mess: types.Message) -> None:
 @dp.message_handler(state=NewIdea.text)
 async def new_idea_text(mess: types.Message, state: FSMContext) -> None:
     buttons = [
-        types.InlineKeyboardButton(text="✅Одобрить", callback_data=f"new_idea_yes_{mess.from_user.id}"),
-        types.InlineKeyboardButton(text="❌Отказать", callback_data=f"new_idea_no_{mess.from_user.id}"),
+        types.InlineKeyboardButton(text="✅ Одобрить", callback_data=f"new_idea_yes_{mess.from_user.id}"),
+        types.InlineKeyboardButton(text="❌ Отказать", callback_data=f"new_idea_no_{mess.from_user.id}"),
     ]
     keyboard = types.InlineKeyboardMarkup(row_width=2)
     keyboard.add(*buttons)
@@ -40,20 +40,28 @@ async def new_idea_text(mess: types.Message, state: FSMContext) -> None:
 @dp.callback_query_handler(lambda call: call.data.startswith('new_idea_yes_'))
 async def new_idea_yes(call: types.CallbackQuery) -> None:
     id = call.data[13:]
-    BotDB.cursor.execute("UPDATE `ideas` SET `status` = ? WHERE `user_id` = ? AND `status` = ?", ('yes', id, 'wait'))
-    BotDB.conn.commit()
-    await call.bot.edit_message_reply_markup(chat_id=call.from_user.id, message_id=call.message.message_id,
-                                             reply_markup=None)
-    await call.message.edit_text(f'{call.message.text}\n✅Одобрено')
-    await call.bot.send_message(id, 'Вашу идею одобрили!')
+    status = BotDB.cursor.execute("SELECT * FROM `ideas` WHERE `user_id` = ? AND `status` = ?", (id, 'wait')).fetchall()
+    if len(status) == 0:
+        await call.bot.send_message(call.from_user.id, "Идея уже рассмотрена")
+    else:
+        BotDB.cursor.execute("UPDATE `ideas` SET `status` = ? WHERE `user_id` = ? AND `status` = ?", ('yes', id, 'wait'))
+        BotDB.conn.commit()
+        await call.bot.edit_message_reply_markup(chat_id=call.from_user.id, message_id=call.message.message_id,
+                                                 reply_markup=None)
+        await call.message.edit_text(f'{call.message.text}\n✅ Одобрено')
+        await call.bot.send_message(id, 'Вашу идею одобрили!')
 
 
 @dp.callback_query_handler(lambda call: call.data.startswith('new_idea_no_'))
 async def new_idea_no(call: types.CallbackQuery) -> None:
     id = call.data[12:]
-    BotDB.cursor.execute("UPDATE `ideas` SET `status` = ? WHERE `user_id` = ? AND `status` = ?", ('no', id, 'wait'))
-    BotDB.conn.commit()
-    await call.bot.edit_message_reply_markup(chat_id=call.from_user.id, message_id=call.message.message_id,
-                                             reply_markup=None)
-    await call.message.edit_text(f'{call.message.text}\n❌Отказано')
-    await call.bot.send_message(id, 'Вашу идею отклонили!')
+    status = BotDB.cursor.execute("SELECT * FROM `ideas` WHERE `user_id` = ? AND `status` = ?", (id, 'wait')).fetchall()
+    if len(status) == 0:
+        await call.bot.send_message(call.from_user.id, "Идея уже рассмотрена")
+    else:
+        BotDB.cursor.execute("UPDATE `ideas` SET `status` = ? WHERE `user_id` = ? AND `status` = ?", ('no', id, 'wait'))
+        BotDB.conn.commit()
+        await call.bot.edit_message_reply_markup(chat_id=call.from_user.id, message_id=call.message.message_id,
+                                                 reply_markup=None)
+        await call.message.edit_text(f'{call.message.text}\n❌ Отказано')
+        await call.bot.send_message(id, 'Вашу идею отклонили!')
