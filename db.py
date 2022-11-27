@@ -23,12 +23,20 @@ class BotDB:
 
     def add_idea(self, user_id, login, text):
         """Добавляем новую идею в базу"""
-        self.cursor.execute("INSERT INTO `ideas` (`user_id`, `login`, `idea`, `status`) VALUES (?, ?, ?, ?)", (user_id, login, text, 'wait'))
+        self.cursor.execute("INSERT INTO `ideas` (`user_id`, `login`, `idea`, `status`) VALUES (?, ?, ?, ?)",
+                            (user_id, login, text, 'wait'))
         return self.conn.commit()
 
     def get_sections(self):
         """Получаем список всех разделов"""
         result = list(map(lambda x: x[0], self.cursor.execute("SELECT `name` FROM `sections`").fetchall()))
+        return result
+
+    def get_answers(self, section_name):
+        """Получаем список ответов и их id из определённого раздела"""
+        result = list(self.cursor.execute("SELECT id, text FROM information WHERE section=(SELECT id FROM sections "
+                                          "WHERE name = ?)", (section_name,)).fetchall())
+        result.sort(key=lambda x: x[1])
         return result
 
     def close(self):
