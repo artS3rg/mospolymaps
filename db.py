@@ -1,5 +1,6 @@
 import sqlite3
 
+
 class BotDB:
     def __init__(self, db_file):
         self.conn = sqlite3.connect(db_file)
@@ -24,6 +25,11 @@ class BotDB:
         """Добавляем новую идею в базу"""
         self.cursor.execute("INSERT INTO `ideas` (`user_id`, `login`, `idea`, `status`) VALUES (?, ?, ?, ?)", (user_id, login, text, 'wait'))
         return self.conn.commit()
+
+    def get_sections(self):
+        """Получаем список всех разделов"""
+        result = list(map(lambda x: x[0], self.cursor.execute("SELECT `name` FROM `sections`").fetchall()))
+        return result
 
     def close(self):
         """Закрываем соединение с БД"""

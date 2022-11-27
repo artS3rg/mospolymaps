@@ -1,4 +1,5 @@
 from aiogram import types
+from main import BotDB
 
 start_buttons = ["🗺 Навигатор", "🆕 Предложить идею", "💬 Помощник"]
 start_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
@@ -16,6 +17,6 @@ helper_main_sections_buttons = ["📖 Разделы", "🔎 Поиск", "🏠 
 helper_main_sections_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
 helper_main_sections_keyboard.add(*helper_main_sections_buttons)
 
-informational_sections_buttons = ["Учёба", "Общежитие", "Документы", "Внеучебная деятельность", "Другое", "↩ Назад"]
+informational_sections_buttons = BotDB.get_sections() + ["↩ Назад"]
 informational_sections_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
 informational_sections_keyboard.add(*informational_sections_buttons)
