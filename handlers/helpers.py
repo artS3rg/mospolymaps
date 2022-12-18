@@ -6,6 +6,7 @@ import os
 from main import dp, BotDB
 from aiogram import types
 from aiogram.dispatcher.filters import Text
+from config import TOKEN
 
 
 @dp.message_handler(lambda message: message.text == "💬 Помощник", state=None)
@@ -32,18 +33,23 @@ async def send(mess: a.types.Message):
 @dp.callback_query_handler(Text(startswith='answer_'))
 async def send_answer(callback_query: types.CallbackQuery):
     answer_id = int(callback_query.data.split('_')[1])
-    answer_text = BotDB.cursor.execute("SELECT text FROM information WHERE id = ?", (answer_id, )).fetchone()[0]
+    answer_text = BotDB.cursor.execute("SELECT text FROM information WHERE id = ?", (answer_id,)).fetchone()[0]
 
-    files = os.listdir('pictures')
-
-    await callback_query.message.answer(answer_text)
     album = types.MediaGroup()
-    for file in files:
-        if (callback_query.data + '_') in file:
-            path = 'pictures/' + file
-            photo = types.InputFile(path_or_bytesio=path)
-            album.attach_photo(photo=photo)
-    await callback_query.bot.send_media_group(chat_id=callback_query.from_user.id, media=album)
+
+    try:
+        images_id = BotDB.cursor.execute("SELECT image_id FROM information WHERE id = ?", (answer_id,)).fetchone()[
+            0].split(';')
+        for i in range(len(images_id)):
+            if i == (len(images_id) - 1):
+                album.attach_photo(photo=images_id[i], caption=answer_text)
+            else:
+                album.attach_photo(photo=images_id[i])
+        await callback_query.bot.send_media_group(chat_id=callback_query.from_user.id, media=album)
+
+    except Exception:
+        await callback_query.message.answer("Информации пока нет")
+
     await callback_query.answer()
 
 
@@ -55,3 +61,8 @@ async def send(mess: a.types.Message):
 @dp.message_handler(lambda message: message.text == "↩ Назад")
 async def send(mess: a.types.Message):
     await mess.bot.send_message(mess.from_user.id, 'Выберите действие', reply_markup=k.helper_main_sections_keyboard)
+
+
+@dp.message_handler(content_types=types.ContentType.PHOTO)
+async def send_photo_file_id(mess: a.types.Message):
+    await mess.reply(mess.photo[-1].file_id)
