@@ -12,13 +12,17 @@ class NewIdea(StatesGroup):
 @dp.message_handler(lambda message: message.text == "🆕 Предложить идею", state=None)
 async def new_idea(mess: types.Message) -> None:
     await mess.bot.delete_message(mess.from_user.id, mess.message_id)
-    ideas = BotDB.cursor.execute("SELECT * FROM `ideas` WHERE `user_id` = ? AND `status` = ?",
-                                 (mess.from_user.id, 'wait')).fetchall()
-    if len(ideas) == 0:
-        await mess.bot.send_message(mess.from_user.id, 'Напишите то, что хотели бы добавить в Нашего бота')
-        await NewIdea.text.set()
+    status = BotDB.cursor.execute("SELECT status FROM users WHERE user_id = ?", (int(mess.from_user.id),)).fetchone()[0]
+    if status == 'ban':
+        await mess.bot.send_message(mess.from_user.id, "Вы забанены!")
     else:
-        await mess.bot.send_message(mess.from_user.id, "Вашу прошлую идею ещё не рассмотрели!")
+        ideas = BotDB.cursor.execute("SELECT * FROM `ideas` WHERE `user_id` = ? AND `status` = ?",
+                                     (mess.from_user.id, 'wait')).fetchall()
+        if len(ideas) == 0:
+            await mess.bot.send_message(mess.from_user.id, 'Напишите то, что хотели бы добавить в Нашего бота')
+            await NewIdea.text.set()
+        else:
+            await mess.bot.send_message(mess.from_user.id, "Вашу прошлую идею ещё не рассмотрели!")
 
 
 @dp.message_handler(state=NewIdea.text)

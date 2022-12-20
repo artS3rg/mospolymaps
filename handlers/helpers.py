@@ -11,17 +11,24 @@ from config import TOKEN
 
 @dp.message_handler(lambda message: message.text == "💬 Помощник", state=None)
 async def send(mess: a.types.Message):
-    await mess.bot.send_message(mess.from_user.id, 'Выберите действие', reply_markup=k.helper_main_sections_keyboard)
+    await mess.bot.delete_message(mess.from_user.id, mess.message_id)
+    status = BotDB.cursor.execute("SELECT status FROM users WHERE user_id = ?", (int(mess.from_user.id),)).fetchone()[0]
+    if status == 'ban':
+        await mess.bot.send_message(mess.from_user.id, "Вы забанены!")
+    else:
+        await mess.bot.send_message(mess.from_user.id, 'Выберите действие', reply_markup=k.helper_main_sections_keyboard)
 
 
 @dp.message_handler(lambda message: message.text == "📖 Разделы", state=None)
 async def send(mess: a.types.Message):
+    await mess.bot.delete_message(mess.from_user.id, mess.message_id)
     await mess.bot.send_message(mess.from_user.id, 'Выберите раздел', reply_markup=k.informational_sections_keyboard)
 
 
 # Разделы и вопросы
 @dp.message_handler(lambda message: message.text in BotDB.get_sections(), state=None)
 async def send(mess: a.types.Message):
+    await mess.bot.delete_message(mess.from_user.id, mess.message_id)
     inline_questions = types.InlineKeyboardMarkup()
     answers = BotDB.get_answers(mess.text)
     for ans in answers:
@@ -55,11 +62,24 @@ async def send_answer(callback_query: types.CallbackQuery):
 
 @dp.message_handler(lambda message: message.text == "🔎 Поиск")
 async def send(mess: a.types.Message):
+    #работа с тегами
+    tags = BotDB.cursor.execute("SELECT tags FROM information").fetchall()
+    all_sections = []
+    for i in tags:
+        all_sections.append(i[0].split(' '))
+    for i in all_sections:
+        pass
+    buttons = []
+    keyboard = types.InlineKeyboardMarkup(row_width=3)
+    keyboard.add(*buttons)
+    #await mess.bot.send_message(mess.from_user.id, 'Все что мы смогли найти:', reply_markup=keyboard)
+    await mess.bot.delete_message(mess.from_user.id, mess.message_id)
     await mess.bot.send_message(mess.from_user.id, 'А его пока нет 🙃')
 
 
 @dp.message_handler(lambda message: message.text == "↩ Назад")
 async def send(mess: a.types.Message):
+    await mess.bot.delete_message(mess.from_user.id, mess.message_id)
     await mess.bot.send_message(mess.from_user.id, 'Выберите действие', reply_markup=k.helper_main_sections_keyboard)
 
 
