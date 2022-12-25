@@ -6,7 +6,15 @@ import os
 from main import dp, BotDB
 from aiogram import types
 from aiogram.dispatcher.filters import Text
-from config import TOKEN
+from difflib import SequenceMatcher
+from aiogram.dispatcher.filters.state import State, StatesGroup
+from aiogram.dispatcher import FSMContext
+
+class Search(StatesGroup):
+    text = State()
+
+def similar(a_word, b_word):
+    return SequenceMatcher(None, a_word, b_word).ratio()
 
 
 @dp.message_handler(lambda message: message.text == "💬 Помощник", state=None)
@@ -60,21 +68,44 @@ async def send_answer(callback_query: types.CallbackQuery):
     await callback_query.answer()
 
 
-@dp.message_handler(lambda message: message.text == "🔎 Поиск")
+#Поиск
+@dp.message_handler(lambda message: message.text == "🔎 Поиск", state=None)
 async def send(mess: a.types.Message):
-    #работа с тегами
-    tags = BotDB.cursor.execute("SELECT tags FROM information").fetchall()
-    all_sections = []
-    for i in tags:
-        all_sections.append(i[0].split(' '))
-    for i in all_sections:
-        pass
-    buttons = []
-    keyboard = types.InlineKeyboardMarkup(row_width=3)
-    keyboard.add(*buttons)
-    #await mess.bot.send_message(mess.from_user.id, 'Все что мы смогли найти:', reply_markup=keyboard)
     await mess.bot.delete_message(mess.from_user.id, mess.message_id)
-    await mess.bot.send_message(mess.from_user.id, 'А его пока нет 🙃')
+    await mess.bot.send_message(mess.from_user.id, 'Введите текст для поиска по боту')
+    await Search.text.set()
+
+@dp.message_handler(state=Search.text)
+async def search(mess: types.Message, state:FSMContext):
+    tags = BotDB.cursor.execute("SELECT id, tags, text FROM information").fetchall()
+    new_tags = []
+    keyboard = types.InlineKeyboardMarkup(row_width=3)
+    text = mess.text
+    text = text.lower()
+    text = text.replace("?", "", 1)
+    text = text.replace("как ", "", 1)
+    user_words = text.split(' ')
+    kolvo = 0
+    for i in range(len(tags)):
+        new_tags.append([tags[i][0], tags[i][1], tags[i][2]])
+    for i in range(len(new_tags)):
+        new_tags[i][1] = new_tags[i][1].split(';')
+    for i in new_tags:
+        if len(keyboard["inline_keyboard"]) == 3:
+            break
+        for u_word in user_words:
+            for j in i[1]:
+                if similar(j, u_word) >= 0.7: #процент при котором слова можно считать схожими
+                    kolvo += 1
+                    continue
+        if (kolvo / len(user_words)) >= 0.5: #процент при котором кнопка доб в клавиатуру
+            keyboard.add(types.InlineKeyboardButton(text=i[2], callback_data="answer_"+str(i[0])))
+        kolvo = 0
+    if len(keyboard["inline_keyboard"]) == 0:
+        await mess.bot.send_message(mess.from_user.id, 'Извините, мы не смогли ничего найти :(')
+    else:
+        await mess.bot.send_message(mess.from_user.id, 'Все что мы смогли найти:', reply_markup=keyboard)
+    await state.finish()
 
 
 @dp.message_handler(lambda message: message.text == "↩ Назад")
