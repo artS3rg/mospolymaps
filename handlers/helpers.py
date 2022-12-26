@@ -10,8 +10,10 @@ from difflib import SequenceMatcher
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher import FSMContext
 
+
 class Search(StatesGroup):
     text = State()
+
 
 def similar(a_word, b_word):
     return SequenceMatcher(None, a_word, b_word).ratio()
@@ -24,7 +26,8 @@ async def send(mess: a.types.Message):
     if status == 'ban':
         await mess.bot.send_message(mess.from_user.id, "Вы забанены!")
     else:
-        await mess.bot.send_message(mess.from_user.id, 'Выберите действие', reply_markup=k.helper_main_sections_keyboard)
+        await mess.bot.send_message(mess.from_user.id, 'Выберите действие',
+                                    reply_markup=k.helper_main_sections_keyboard)
 
 
 @dp.message_handler(lambda message: message.text == "📖 Разделы", state=None)
@@ -68,15 +71,16 @@ async def send_answer(callback_query: types.CallbackQuery):
     await callback_query.answer()
 
 
-#Поиск
+# Поиск
 @dp.message_handler(lambda message: message.text == "🔎 Поиск", state=None)
 async def send(mess: a.types.Message):
     await mess.bot.delete_message(mess.from_user.id, mess.message_id)
-    await mess.bot.send_message(mess.from_user.id, 'Введите текст для поиска по боту')
+    await mess.bot.send_message(mess.from_user.id, 'Введите текст для поиска')
     await Search.text.set()
 
+
 @dp.message_handler(state=Search.text)
-async def search(mess: types.Message, state:FSMContext):
+async def search(mess: types.Message, state: FSMContext):
     tags = BotDB.cursor.execute("SELECT id, tags, text FROM information").fetchall()
     new_tags = []
     keyboard = types.InlineKeyboardMarkup(row_width=3)
@@ -95,16 +99,16 @@ async def search(mess: types.Message, state:FSMContext):
             break
         for u_word in user_words:
             for j in i[1]:
-                if similar(j, u_word) >= 0.7: #процент при котором слова можно считать схожими
+                if similar(j, u_word) >= 0.7:  # процент при котором слова можно считать схожими
                     kolvo += 1
                     continue
-        if (kolvo / len(user_words)) >= 0.5: #процент при котором кнопка доб в клавиатуру
-            keyboard.add(types.InlineKeyboardButton(text=i[2], callback_data="answer_"+str(i[0])))
+        if (kolvo / len(user_words)) >= 0.5:  # процент при котором кнопка доб в клавиатуру
+            keyboard.add(types.InlineKeyboardButton(text=i[2], callback_data="answer_" + str(i[0])))
         kolvo = 0
     if len(keyboard["inline_keyboard"]) == 0:
-        await mess.bot.send_message(mess.from_user.id, 'Извините, мы не смогли ничего найти :(')
+        await mess.bot.send_message(mess.from_user.id, 'Извините, я не смог ничего найти :(')
     else:
-        await mess.bot.send_message(mess.from_user.id, 'Все что мы смогли найти:', reply_markup=keyboard)
+        await mess.bot.send_message(mess.from_user.id, 'Все что я смог найти:', reply_markup=keyboard)
     await state.finish()
 
 
