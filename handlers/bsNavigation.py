@@ -153,7 +153,7 @@ async def bs_nav_input_next(mess: types.Message, state: FSMContext):
         await mess.bot.delete_message(mess.from_user.id, mess.message_id)
         await mess.bot.send_message(mess.from_user.id, bs_info_text)
     elif mess.text == "🏠 Главная":
-        await mess.bot.send_message(mess.from_user.id, "Выберите действие", reply_markup=keyboards.start_keyboard)
+        await mess.bot.send_message(mess.from_user.id, "Выберите действие", reply_markup=keyboards.start_stud_keyboard)
     else:
         k = 3
         text = mess.text
