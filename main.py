@@ -100,7 +100,7 @@ async def navigation(mess: a.types.Message):
 @dp.message_handler(lambda message: message.text == "🏠 Главная")
 async def back_home(mess: a.types.Message):
     await mess.bot.delete_message(mess.from_user.id, mess.message_id)
-    await mess.bot.send_message(mess.from_user.id, 'Главный раздел', reply_markup=k.start_keyboard)
+    await mess.bot.send_message(mess.from_user.id, 'Главный раздел', reply_markup=k.start_stud_keyboard)
 
 
 
