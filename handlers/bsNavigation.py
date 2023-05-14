@@ -162,6 +162,116 @@ async def bs_nav_input_next(mess: types.Message, state: FSMContext):
         text = text.replace("B", "В", 1)
         text = text.replace("H", "Н", 1)
         travel = ""
+        if (len(text) != 4) or (text[0] not in campus_letters) or (text[1] in campus_letters) or (
+                text[2] in campus_letters) or (text[3] in campus_letters) or (text == "А107") or (int(text[1]) > 4) or (
+                int(text[2]) > 2):
+            await mess.bot.send_message(mess.from_user.id, "Неверная аудитория. Начните заново ❌")
+        else:
+            match text[0]:
+                case "А":
+                    try:
+                        audit = text[1:]
+                        travel += f"1. Пройдите налево к лестнице и поднимитесь на {audit[0]} этаж ⤴️\n"
+                        if audit[0] == '1':
+                            if (audit == '100'):
+                                pass
+                            elif (audit == '112') or (audit == '111'):
+                                travel += '2. Пройдите вперед ⬆️\n'
+                            elif (int(audit[1:]) <= 20) and (int(audit[1:]) >= 13):
+                                travel += f"2. Поверните направо ➡️\n"
+                            elif (int(audit[1:]) >= 1) and (int(audit[1:]) <= 10):
+                                travel += f"2. Поверните налево ⬅️\n"
+                            else:
+                                await mess.bot.send_message(mess.from_user.id, "Неверная аудитория. Начните заново ❌")
+                                await state.finish()
+                        elif audit[0] == '2':
+                            if audit == '210':
+                                travel += f"{k}. Пройдите вперед ⬆️\n"
+                                k += 1
+                            else:
+                                if (int(audit[1:]) <=9) and (int(audit[1:]) >= 1):
+                                    travel += f"{k}. Поверните налево ⬅️\n"
+                                    k += 1
+                                elif (int(audit[1:]) >= 11) and (int(audit[1:]) <= 21):
+                                    travel += f"{k}. Поверните направо ➡️\n"
+                                    k += 1
+                                else:
+                                    await mess.bot.send_message(mess.from_user.id, "Неверная аудитория. Начните заново ❌")
+                                    await state.finish()
+                        elif audit[0] == '3':
+                            if audit == '316':
+                                travel += f"{k}. Пройдите вперед ⬆️\n"
+                                k += 1
+                            else:
+                                if (int(audit[1:]) < 16) and (int(audit[1:]) > 0):
+                                    travel += f"{k}. Поверните налево ⬅️\n"
+                                    k += 1
+                                elif (int(audit[1:]) > 16) and (int(audit[1:]) < 27):
+                                    travel += f"{k}. Поверните направо ➡️\n"
+                                    k += 1
+                                else:
+                                    await mess.bot.send_message(mess.from_user.id, "Неверная аудитория. Начните заново ❌")
+                                    await state.finish()
+                        elif audit[0] == '4':
+                            if audit == '415':
+                                travel += f"{k}. Пройдите вперед ⬆️\n"
+                                k += 1
+                            else:
+                                if (int(audit[1:]) < 15) and (int(audit[1:]) > 0):
+                                    travel += f"{k}. Поверните налево ⬅️\n"
+                                    k += 1
+                                elif (int(audit[1:]) > 15) and (int(audit[1:]) < 26):
+                                    travel += f"{k}. Поверните направо ➡️\n"
+                                    k += 1
+                                else:
+                                    await mess.bot.send_message(mess.from_user.id, "Неверная аудитория. Начните заново ❌")
+                                    await state.finish()
+                    except:
+                        await mess.bot.send_message(mess.from_user.id, "Неверная аудитория. Начните заново ❌")
+                        await state.finish()
+            travel += f"{k}. Пройдите к аудитории, показанной на карте ✅"
+            time = int(datetime.now().strftime("%H"))
+            if (time > 8) and (time < 20):
+                if text == 'А112':
+                    photo_id_1 = BotDB.cursor.execute("SELECT `photo_id` FROM `auds_light_bs_A` WHERE `name` = ? ",
+                                                      ("А112",)).fetchone()[0]
+                    photo_id_2 = BotDB.cursor.execute("SELECT `photo_id` FROM `auds_light_bs_A` WHERE `name` = ? ",
+                                                      ("А112Б",)).fetchone()[0]
+                    photo_id_3 = BotDB.cursor.execute("SELECT `photo_id` FROM `auds_light_bs_A` WHERE `name` = ? ",
+                                                      ("А112В",)).fetchone()[0]
+                    photo_id_4 = BotDB.cursor.execute("SELECT `photo_id` FROM `auds_light_bs_A` WHERE `name` = ? ",
+                                                      ("А112Г",)).fetchone()[0]
+                    media = types.MediaGroup()
+                    media.attach_photo(photo=photo_id_1, caption=travel)
+                    media.attach_photo(photo=photo_id_2)
+                    media.attach_photo(photo=photo_id_3)
+                    media.attach_photo(photo=photo_id_4)
+                    await mess.bot.send_media_group(mess.from_user.id, media)
+                else:
+                    photo_id = \
+                        BotDB.cursor.execute("SELECT `photo_id` FROM `auds_light_bs_A` WHERE `name` = ? ", (text,)).fetchone()[
+                            0]
+                    await mess.bot.send_photo(mess.from_user.id, photo_id, travel)
+            else:
+                if text == 'А112':
+                    photo_id_1 = BotDB.cursor.execute("SELECT `photo_id` FROM `auds_dark_bs_A` WHERE `name` = ? ",
+                                                      ("А112",)).fetchone()[0]
+                    photo_id_2 = BotDB.cursor.execute("SELECT `photo_id` FROM `auds_dark_bs_A` WHERE `name` = ? ",
+                                                      ("А112Б",)).fetchone()[0]
+                    photo_id_3 = BotDB.cursor.execute("SELECT `photo_id` FROM `auds_dark_bs_A` WHERE `name` = ? ",
+                                                      ("А112В",)).fetchone()[0]
+                    photo_id_4 = BotDB.cursor.execute("SELECT `photo_id` FROM `auds_dark_bs_A` WHERE `name` = ? ",
+                                                      ("А112Г",)).fetchone()[0]
+                    media = types.MediaGroup()
+                    media.attach_photo(photo=photo_id_1, caption=travel)
+                    media.attach_photo(photo=photo_id_2)
+                    media.attach_photo(photo=photo_id_3)
+                    media.attach_photo(photo=photo_id_4)
+                    await mess.bot.send_media_group(mess.from_user.id, media)
+                else:
+                    photo_id = \
+                        BotDB.cursor.execute("SELECT `photo_id` FROM `auds_dark_bs_A` WHERE `name` = ? ", (text,)).fetchone()[0]
+                    await mess.bot.send_photo(mess.from_user.id, photo_id, travel)
     await state.finish()
 
 
