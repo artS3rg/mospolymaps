@@ -1,0 +1,3 @@
+TOKEN = '5636529212:AAE2WMo9Tq1sjsGMr9bRJVxB1RsdzuUnsFA'
+admin_ids = [575770908, 977739006]
+stud_token = 'I8EhrAa.4P5t!8ry6_yI46qRYjSunD'
