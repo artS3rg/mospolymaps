@@ -29,7 +29,7 @@ async def new_idea(mess: types.Message) -> None:
 @dp.message_handler(state=NewIdea.text)
 async def new_idea_text(mess: types.Message, state: FSMContext) -> None:
     if mess.text == "↩ Назад":
-        await mess.bot.send_message(mess.from_user.id, "Выберите действие", reply_markup=k.start_keyboard)
+        await mess.bot.send_message(mess.from_user.id, "Выберите действие", reply_markup=k.start_stud_keyboard)
     else:
         buttons = [
             types.InlineKeyboardButton(text="✅ Одобрить", callback_data=f"new_idea_yes_{mess.from_user.id}"),
