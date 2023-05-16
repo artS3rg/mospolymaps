@@ -14,8 +14,10 @@ from pars_html_bs4 import pars_schedule
 class Search(StatesGroup):
     text = State()
 
+
 class Schedule(StatesGroup):
     step1 = State()
+
 
 def similar(a_word, b_word):
     return SequenceMatcher(None, a_word, b_word).ratio()
@@ -28,18 +30,43 @@ async def send(mess: a.types.Message):
     if status == 'ban':
         await mess.bot.send_message(mess.from_user.id, "Вы забанены!")
     else:
-        await mess.bot.send_message(mess.from_user.id, 'Выберите действие',
-                                    reply_markup=k.helper_main_sections_keyboard)
+        stud_status = \
+            BotDB.cursor.execute("SELECT stud_status FROM users WHERE user_id = ?",
+                                 (int(mess.from_user.id),)).fetchone()[0]
+        if stud_status == 'stud':
+            await mess.bot.send_message(mess.from_user.id, 'Выберите действие',
+                                        reply_markup=k.helper_main_sections_keyboard)
+        else:
+            await mess.bot.send_message(mess.from_user.id, 'Выберите действие',
+                                        reply_markup=k.helper_main_sections_stuff_keyboard)
 
 
 @dp.message_handler(lambda message: message.text == "📖 Разделы", state=None)
 async def send(mess: a.types.Message):
     await mess.bot.delete_message(mess.from_user.id, mess.message_id)
-    await mess.bot.send_message(mess.from_user.id, 'Выберите раздел', reply_markup=k.informational_sections_keyboard)
+    status = \
+    BotDB.cursor.execute("SELECT stud_status FROM users WHERE user_id = ?", (int(mess.from_user.id),)).fetchone()[0]
+    if status == 'stud':
+        await mess.bot.send_message(mess.from_user.id, 'Выберите раздел',
+                                    reply_markup=k.informational_sections_keyboard)
+    else:
+        await mess.bot.send_message(mess.from_user.id, 'Выберите раздел',
+                                    reply_markup=k.sections_staff_keyboard)
+
+
+# Разделы и вопросы для сотрудников
+@dp.message_handler(lambda message: message.text in BotDB.get_employee_sections(), state=None)
+async def send(mess: a.types.Message):
+    await mess.bot.delete_message(mess.from_user.id, mess.message_id)
+    inline_questions = types.InlineKeyboardMarkup()
+    answers = BotDB.get_staff_answers(mess.text)
+    for ans in answers:
+        inline_questions.add(types.InlineKeyboardButton(text=ans[1], callback_data="answer_" + str(ans[0])))
+    await mess.bot.send_message(mess.from_user.id, "Выберите интересующий вас вопрос:", reply_markup=inline_questions)
 
 
 
-# Разделы и вопросы
+# Разделы и вопросы для студентов
 @dp.message_handler(lambda message: message.text in BotDB.get_sections(), state=None)
 async def send(mess: a.types.Message):
     await mess.bot.delete_message(mess.from_user.id, mess.message_id)
@@ -57,7 +84,8 @@ async def send_answer(callback_query: types.CallbackQuery):
     answer_text = BotDB.cursor.execute("SELECT text FROM information WHERE id = ?", (answer_id,)).fetchone()[0] + "\n"
 
     if BotDB.cursor.execute("SELECT links FROM information WHERE id = ?", (answer_id,)).fetchone()[0] is not None:
-        for link in BotDB.cursor.execute("SELECT links FROM information WHERE id = ?", (answer_id,)).fetchone()[0].split(';'):
+        for link in BotDB.cursor.execute("SELECT links FROM information WHERE id = ?", (answer_id,)).fetchone()[
+            0].split(';'):
             answer_text += "\n" + link
 
     album = types.MediaGroup()
@@ -75,18 +103,21 @@ async def send_answer(callback_query: types.CallbackQuery):
         # дополнительные кнопки
         if BotDB.cursor.execute("SELECT buttons FROM information WHERE id = ?", (answer_id,)).fetchone()[0] is not None:
 
-            buttons_id = list(map(int, BotDB.cursor.execute("SELECT buttons FROM information WHERE id = ?", (answer_id,)).fetchone()[0].split(';')))
+            buttons_id = list(map(int, BotDB.cursor.execute("SELECT buttons FROM information WHERE id = ?",
+                                                            (answer_id,)).fetchone()[0].split(';')))
 
             buttons_names = []
             for id in buttons_id:
-                buttons_names.append(BotDB.cursor.execute("SELECT text FROM information WHERE id = ?", (id,)).fetchone()[0])
+                buttons_names.append(
+                    BotDB.cursor.execute("SELECT text FROM information WHERE id = ?", (id,)).fetchone()[0])
 
             inline_questions = types.InlineKeyboardMarkup()
             for i in range(len(buttons_id)):
                 inline_questions.add(
                     types.InlineKeyboardButton(text=buttons_names[i], callback_data="answer_" + str(buttons_id[i])))
 
-            await callback_query.bot.send_message(callback_query.from_user.id, "Связанное:", reply_markup=inline_questions)
+            await callback_query.bot.send_message(callback_query.from_user.id, "Связанное:",
+                                                  reply_markup=inline_questions)
 
     except Exception:
         await callback_query.message.answer("Информации пока нет")
@@ -105,9 +136,17 @@ async def send(mess: a.types.Message):
 # Обработка поиска
 @dp.message_handler(state=Search.text)
 async def search(mess: types.Message, state: FSMContext):
-    await mess.bot.delete_message(mess.from_user.id, mess.message_id)
+    # await mess.bot.delete_message(mess.from_user.id, mess.message_id)
     if mess.text == "↩ Выйти из поиска":
-        await mess.bot.send_message(mess.from_user.id, "Выберите действие", reply_markup=k.helper_main_sections_keyboard)
+        status = \
+            BotDB.cursor.execute("SELECT stud_status FROM users WHERE user_id = ?",
+                                 (int(mess.from_user.id),)).fetchone()[0]
+        if status == 'stud':
+            await mess.bot.send_message(mess.from_user.id, 'Выберите действие',
+                                        reply_markup=k.helper_main_sections_keyboard)
+        else:
+            await mess.bot.send_message(mess.from_user.id, 'Выберите действие',
+                                        reply_markup=k.helper_main_sections_stuff_keyboard)
         await state.finish()
     else:
         tags = BotDB.cursor.execute("SELECT id, tags, text FROM information").fetchall()
@@ -133,18 +172,21 @@ async def search(mess: types.Message, state: FSMContext):
                         continue
             if (len(user_words) <= 2) and (kolvo >= 1):
                 keyboard.add(types.InlineKeyboardButton(text=i[2], callback_data="answer_" + str(i[0])))
-            elif (len(user_words) >= 3) and (kolvo >= len(i[1])//2):
+            elif (len(user_words) >= 3) and (kolvo >= len(i[1]) // 2):
                 keyboard.add(types.InlineKeyboardButton(text=i[2], callback_data="answer_" + str(i[0])))
             kolvo = 0
         if len(keyboard["inline_keyboard"]) == 0:
             await mess.bot.send_message(mess.from_user.id, 'Извините, я не смог ничего найти :(')
             await state.finish()
-            await mess.bot.send_message(mess.from_user.id, 'Введите текст для поиска',reply_markup=k.search_back_keyboard)
+            await mess.bot.send_message(mess.from_user.id, 'Введите текст для поиска',
+                                        reply_markup=k.search_back_keyboard)
             await Search.text.set()
         else:
             await mess.bot.send_message(mess.from_user.id, 'Все что я смог найти:', reply_markup=keyboard)
-            await mess.bot.send_message(mess.from_user.id, 'Выберите действие', reply_markup=k.helper_main_sections_keyboard)
+            await mess.bot.send_message(mess.from_user.id, 'Выберите действие',
+                                        reply_markup=k.helper_main_sections_keyboard)
             await state.finish()
+
 
 @dp.message_handler(lambda message: message.text == "📚 Расписание", state=None)
 async def schedule(mess: a.types.Message):
@@ -152,21 +194,39 @@ async def schedule(mess: a.types.Message):
     await mess.bot.send_message(mess.from_user.id, 'Введите номер группы', reply_markup=k.search_back_keyboard)
     await Schedule.step1.set()
 
+
 @dp.message_handler(state=Schedule.step1)
 async def get_schedule(mess: a.types.Message, state=FSMContext):
     item = mess.text
     await mess.bot.send_message(mess.from_user.id, pars_schedule(item), reply_markup=k.helper_main_sections_keyboard)
     await state.finish()
 
+
 @dp.message_handler(lambda message: message.text == "↩ Назад")
 async def send(mess: a.types.Message):
     await mess.bot.delete_message(mess.from_user.id, mess.message_id)
-    await mess.bot.send_message(mess.from_user.id, 'Выберите действие', reply_markup=k.helper_main_sections_keyboard)
+    status = \
+        BotDB.cursor.execute("SELECT stud_status FROM users WHERE user_id = ?", (int(mess.from_user.id),)).fetchone()[0]
+    if status == 'stud':
+        await mess.bot.send_message(mess.from_user.id, 'Выберите действие',
+                                    reply_markup=k.helper_main_sections_keyboard)
+    else:
+        await mess.bot.send_message(mess.from_user.id, 'Выберите действие',
+                                    reply_markup=k.helper_main_sections_stuff_keyboard)
+
 
 @dp.message_handler(lambda message: message.text == "↩ Выйти из поиска")
 async def send(mess: a.types.Message):
     await mess.bot.delete_message(mess.from_user.id, mess.message_id)
-    await mess.bot.send_message(mess.from_user.id, 'Выберите действие', reply_markup=k.helper_main_sections_keyboard)
+    status = \
+        BotDB.cursor.execute("SELECT stud_status FROM users WHERE user_id = ?", (int(mess.from_user.id),)).fetchone()[0]
+    if status == 'stud':
+        await mess.bot.send_message(mess.from_user.id, 'Выберите действие',
+                                    reply_markup=k.helper_main_sections_keyboard)
+    else:
+        await mess.bot.send_message(mess.from_user.id, 'Выберите действие',
+                                    reply_markup=k.helper_main_sections_stuff_keyboard)
+
 
 @dp.message_handler(content_types=types.ContentType.PHOTO)
 async def send_photo_file_id(mess: a.types.Message):

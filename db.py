@@ -23,7 +23,8 @@ class BotDB:
 
     def add_user(self, user_id, login, status):
         """Добавляем юзера в базу"""
-        self.cursor.execute("INSERT INTO `users` (`user_id`, `login`, `stud_status`) VALUES (?, ?, ?)", (user_id, login, status))
+        self.cursor.execute("INSERT INTO `users` (`user_id`, `login`, `stud_status`) VALUES (?, ?, ?)",
+                            (user_id, login, status))
         return self.conn.commit()
 
     def add_idea(self, user_id, login, text):
@@ -44,8 +45,17 @@ class BotDB:
 
     def get_answers(self, section_name):
         """Получаем список ответов и их id из определённого раздела"""
-        result = list(self.cursor.execute("SELECT id, text FROM information WHERE section=(SELECT id FROM sections "
-                                          "WHERE name = ?)", (section_name,)).fetchall())
+        result = list(
+            self.cursor.execute("SELECT id, text FROM information WHERE section=(SELECT id FROM sections "
+                                "WHERE name = ?)", (section_name,)).fetchall())
+        result.sort(key=lambda x: x[1])
+        return result
+
+    def get_staff_answers(self, section_name):
+        """Получаем список ответов и их id из определённого раздела"""
+        result = list(
+            self.cursor.execute("SELECT id, text FROM employee_info WHERE section=(SELECT id FROM employee_sections "
+                                "WHERE name = ?)", (section_name,)).fetchall())
         result.sort(key=lambda x: x[1])
         return result
 

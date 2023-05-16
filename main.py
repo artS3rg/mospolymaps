@@ -73,6 +73,7 @@ async def start_staff(call: a.types.CallbackQuery):
 async def start_staff_log(mess: a.types.Message, state: FSMContext):
     await mess.bot.delete_message(mess.from_user.id, mess.message_id)
     if mess.text == config.stud_token:
+        await mess.bot.send_message(mess.from_user.id, start_mess)
         await mess.bot.send_message(mess.from_user.id, 'Добро пожаловать!', reply_markup=k.start_staff_keyboard)
         BotDB.add_user(mess.from_user.id, mess.from_user.full_name, 'staff')
     else:
