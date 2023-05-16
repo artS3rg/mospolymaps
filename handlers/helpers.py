@@ -105,6 +105,7 @@ async def send(mess: a.types.Message):
 # Обработка поиска
 @dp.message_handler(state=Search.text)
 async def search(mess: types.Message, state: FSMContext):
+    await mess.bot.delete_message(mess.from_user.id, mess.message_id)
     if mess.text == "↩ Выйти из поиска":
         await mess.bot.send_message(mess.from_user.id, "Выберите действие", reply_markup=k.helper_main_sections_keyboard)
         await state.finish()
@@ -142,6 +143,7 @@ async def search(mess: types.Message, state: FSMContext):
             await Search.text.set()
         else:
             await mess.bot.send_message(mess.from_user.id, 'Все что я смог найти:', reply_markup=keyboard)
+            await mess.bot.send_message(mess.from_user.id, 'Выберите действие', reply_markup=k.helper_main_sections_keyboard)
             await state.finish()
 
 @dp.message_handler(lambda message: message.text == "📚 Расписание", state=None)
