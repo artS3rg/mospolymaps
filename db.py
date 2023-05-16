@@ -33,8 +33,13 @@ class BotDB:
         return self.conn.commit()
 
     def get_sections(self):
-        """Получаем список всех разделов"""
+        """Получаем список всех разделов студентов"""
         result = list(map(lambda x: x[0], self.cursor.execute("SELECT `name` FROM `sections`").fetchall()))[1:]
+        return result
+
+    def get_employee_sections(self):
+        """Получаем список всех разделов работников"""
+        result = list(map(lambda x: x[0], self.cursor.execute("SELECT `name` FROM `employee_sections`").fetchall()))[1:]
         return result
 
     def get_answers(self, section_name):

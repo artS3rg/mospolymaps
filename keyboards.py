@@ -5,7 +5,7 @@ start_stud_buttons = ["🗺 Навигатор", "🆕 Предложить ид
 start_stud_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
 start_stud_keyboard.add(*start_stud_buttons)
 
-start_staff_buttons = ["1 раздел", "2 раздел", "3 раздел"]
+start_staff_buttons = BotDB.get_employee_sections() + ["↩ Назад"]
 start_staff_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
 start_staff_keyboard.add(*start_staff_buttons)
 
