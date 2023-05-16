@@ -34,7 +34,7 @@ class BotDB:
 
     def get_sections(self):
         """Получаем список всех разделов"""
-        result = list(map(lambda x: x[0], self.cursor.execute("SELECT `name` FROM `sections`").fetchall()))
+        result = list(map(lambda x: x[0], self.cursor.execute("SELECT `name` FROM `sections`").fetchall()))[1:]
         return result
 
     def get_answers(self, section_name):

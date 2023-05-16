@@ -44,4 +44,4 @@ def pars_schedule(group):
             return "Сегодня пар нет"
         return result
     except:
-        return "Не нашлось расписание для данной группы на сегодня"
+        return "Расписание не найдено"

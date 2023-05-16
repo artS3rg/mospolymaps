@@ -105,7 +105,7 @@ async def send(mess: a.types.Message):
 @dp.message_handler(state=Search.text)
 async def search(mess: types.Message, state: FSMContext):
     if mess.text == "↩ Выйти из поиска":
-        await mess.bot.send_message(mess.from_user.id, "Выберите действие",reply_markup=k.helper_main_sections_keyboard)
+        await mess.bot.send_message(mess.from_user.id, "Выберите действие", reply_markup=k.helper_main_sections_keyboard)
         await state.finish()
     else:
         tags = BotDB.cursor.execute("SELECT id, tags, text FROM information").fetchall()
