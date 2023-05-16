@@ -130,7 +130,9 @@ async def search(mess: types.Message, state: FSMContext):
                     if similar(j, u_word) >= 0.7:  # процент при котором слова можно считать схожими
                         kolvo += 1
                         continue
-            if kolvo >= 3:  # процент при котором кнопка доб в клавиатуру
+            if (len(user_words) <= 2) and (kolvo >= 1):
+                keyboard.add(types.InlineKeyboardButton(text=i[2], callback_data="answer_" + str(i[0])))
+            elif (len(user_words) >= 3) and (kolvo >= len(i[1])//2):
                 keyboard.add(types.InlineKeyboardButton(text=i[2], callback_data="answer_" + str(i[0])))
             kolvo = 0
         if len(keyboard["inline_keyboard"]) == 0:
