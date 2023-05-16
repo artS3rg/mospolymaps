@@ -54,10 +54,11 @@ async def send(mess: a.types.Message):
 @dp.callback_query_handler(Text(startswith='answer_'))
 async def send_answer(callback_query: types.CallbackQuery):
     answer_id = int(callback_query.data.split('_')[1])
-    answer_text = BotDB.cursor.execute("SELECT text FROM information WHERE id = ?", (answer_id,)).fetchone()[0]
+    answer_text = BotDB.cursor.execute("SELECT text FROM information WHERE id = ?", (answer_id,)).fetchone()[0] + "\n"
 
     if BotDB.cursor.execute("SELECT links FROM information WHERE id = ?", (answer_id,)).fetchone()[0] is not None:
-        answer_text += "\n\n" + BotDB.cursor.execute("SELECT links FROM information WHERE id = ?", (answer_id,)).fetchone()[0]
+        for link in BotDB.cursor.execute("SELECT links FROM information WHERE id = ?", (answer_id,)).fetchone()[0].split(';'):
+            answer_text += "\n" + link
 
     album = types.MediaGroup()
 
