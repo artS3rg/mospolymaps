@@ -35,11 +35,11 @@ def pars_schedule(group):
             subject = item_shulde.find("div", class_="bold small").text
             teacher = item_shulde.find("div", class_="teacher").text
             if place.split(', ')[0] not in ['🏠 Обучение LMS', '📷 Webinar']:
-                result += f"{time}\n{place}\n{subject}\n{teacher}\n\n"
+                result += f"⏰{time}\n🏫{place}\n📚{subject}\n🥸{teacher}\n\n"
             else:
                 place = place.split(', ')
                 online_place = f"<a href='{place[1]}'>{place[0]}</a>"
-                result += f"{time}\n{online_place}\n{subject}\n{teacher}\n\n"
+                result += f"⏰{time}\n{online_place}\n📚{subject}\n🥸{teacher}\n\n"
         if counter_pairs == 0:
             return "Сегодня пар нет"
         return result
