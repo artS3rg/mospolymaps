@@ -81,18 +81,27 @@ async def send(mess: a.types.Message):
 @dp.callback_query_handler(Text(startswith='answer_'))
 async def send_answer(callback_query: types.CallbackQuery):
     answer_id = int(callback_query.data.split('_')[1])
-    answer_text = BotDB.cursor.execute("SELECT text FROM information WHERE id = ?", (answer_id,)).fetchone()[0] + "\n"
-
-    if BotDB.cursor.execute("SELECT links FROM information WHERE id = ?", (answer_id,)).fetchone()[0] is not None:
-        for link in BotDB.cursor.execute("SELECT links FROM information WHERE id = ?", (answer_id,)).fetchone()[
-            0].split(';'):
-            answer_text += "\n" + link
-
+    if BotDB.get_user_stud(callback_query.from_user.id) == 'stud':
+        answer_text = BotDB.cursor.execute("SELECT text FROM information WHERE id = ?", (answer_id,)).fetchone()[0] + "\n"
+        if BotDB.cursor.execute("SELECT links FROM information WHERE id = ?", (answer_id,)).fetchone()[0] is not None:
+            for link in BotDB.cursor.execute("SELECT links FROM information WHERE id = ?", (answer_id,)).fetchone()[
+                0].split(';'):
+                answer_text += "\n" + link
+    else:
+        answer_text = BotDB.cursor.execute("SELECT text FROM employee_info WHERE id = ?", (answer_id,)).fetchone()[0] + "\n"
+        if BotDB.cursor.execute("SELECT links FROM employee_info WHERE id = ?", (answer_id,)).fetchone()[0] is not None:
+            for link in BotDB.cursor.execute("SELECT links FROM employee_info WHERE id = ?", (answer_id,)).fetchone()[
+                0].split(';'):
+                answer_text += "\n" + link
     album = types.MediaGroup()
 
     try:
-        images_id = BotDB.cursor.execute("SELECT image_id FROM information WHERE id = ?", (answer_id,)).fetchone()[
-            0].split(';')
+        if BotDB.get_user_stud(callback_query.from_user.id) == 'stud':
+            images_id = BotDB.cursor.execute("SELECT image_id FROM information WHERE id = ?", (answer_id,)).fetchone()[
+                0].split(';')
+        else:
+            images_id = BotDB.cursor.execute("SELECT image_id FROM employee_info WHERE id = ?", (answer_id,)).fetchone()[
+                0].split(';')
         for i in range(len(images_id)):
             if i == (len(images_id) - 1):
                 album.attach_photo(photo=images_id[i], caption=answer_text)
@@ -101,23 +110,42 @@ async def send_answer(callback_query: types.CallbackQuery):
         await callback_query.bot.send_media_group(chat_id=callback_query.from_user.id, media=album)
 
         # дополнительные кнопки
-        if BotDB.cursor.execute("SELECT buttons FROM information WHERE id = ?", (answer_id,)).fetchone()[0] is not None:
+        if BotDB.get_user_stud(callback_query.from_user.id) == 'stud':
+            if BotDB.cursor.execute("SELECT buttons FROM information WHERE id = ?", (answer_id,)).fetchone()[0] is not None:
 
-            buttons_id = list(map(int, BotDB.cursor.execute("SELECT buttons FROM information WHERE id = ?",
-                                                            (answer_id,)).fetchone()[0].split(';')))
+                buttons_id = list(map(int, BotDB.cursor.execute("SELECT buttons FROM information WHERE id = ?",
+                                                                (answer_id,)).fetchone()[0].split(';')))
 
-            buttons_names = []
-            for id in buttons_id:
-                buttons_names.append(
-                    BotDB.cursor.execute("SELECT text FROM information WHERE id = ?", (id,)).fetchone()[0])
+                buttons_names = []
+                for id in buttons_id:
+                    buttons_names.append(
+                        BotDB.cursor.execute("SELECT text FROM information WHERE id = ?", (id,)).fetchone()[0])
 
-            inline_questions = types.InlineKeyboardMarkup()
-            for i in range(len(buttons_id)):
-                inline_questions.add(
-                    types.InlineKeyboardButton(text=buttons_names[i], callback_data="answer_" + str(buttons_id[i])))
+                inline_questions = types.InlineKeyboardMarkup()
+                for i in range(len(buttons_id)):
+                    inline_questions.add(
+                        types.InlineKeyboardButton(text=buttons_names[i], callback_data="answer_" + str(buttons_id[i])))
 
-            await callback_query.bot.send_message(callback_query.from_user.id, "Связанное:",
-                                                  reply_markup=inline_questions)
+                await callback_query.bot.send_message(callback_query.from_user.id, "Связанное:",
+                                                      reply_markup=inline_questions)
+        else:
+            if BotDB.cursor.execute("SELECT buttons FROM employee_info WHERE id = ?", (answer_id,)).fetchone()[0] is not None:
+
+                buttons_id = list(map(int, BotDB.cursor.execute("SELECT buttons FROM employee_info WHERE id = ?",
+                                                                (answer_id,)).fetchone()[0].split(';')))
+
+                buttons_names = []
+                for id in buttons_id:
+                    buttons_names.append(
+                        BotDB.cursor.execute("SELECT text FROM employee_info WHERE id = ?", (id,)).fetchone()[0])
+
+                inline_questions = types.InlineKeyboardMarkup()
+                for i in range(len(buttons_id)):
+                    inline_questions.add(
+                        types.InlineKeyboardButton(text=buttons_names[i], callback_data="answer_" + str(buttons_id[i])))
+
+                await callback_query.bot.send_message(callback_query.from_user.id, "Связанное:",
+                                                      reply_markup=inline_questions)
 
     except Exception:
         await callback_query.message.answer("Информации пока нет")
