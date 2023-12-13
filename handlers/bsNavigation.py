@@ -1,16 +1,120 @@
 from aiogram import types
 
-import keyboards
+import keyboards as k
 from main import dp, BotDB
-from keyboards import bsCampus_keyboard
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher import FSMContext
-from datetime import datetime
+# from datetime import datetime
+
+bs_info_text = '🔸<b>Адрес кампуса на Большой Семёновской:</b>\n' \
+                   'учебные корпуса «А», «Б», «В», «Н», «НД»\n' \
+                   'ст. м. «Электрозаводская» или ж/д станция Электрозаводская, ул. Б. Семёновская, д. 38.'
 
 
 class BsNavigation(StatesGroup):
+    bs_point_a = State()
+
+
+@dp.message_handler(lambda message: message.text == "Большая Семёновская (БС)", state=None)
+async def bs_selected(mess: types.Message):
+    await mess.bot.send_message(mess.from_user.id, 'Выберите действие', reply_markup=k.bsCampus_keyboard)
+    await mess.bot.delete_message(mess.from_user.id, mess.message_id)
+
+
+@dp.message_handler(lambda message: message.text == "📖 Информация (БС)", state=None)
+async def bs_info(mess: types.Message):
+    await mess.bot.delete_message(mess.from_user.id, mess.message_id)
+    await mess.bot.send_message(mess.from_user.id, bs_info_text)
+
+
+@dp.message_handler(lambda message: message.text == "🔻 Маршрут (БС)", state=None)
+async def bs_navigation(mess: types.Message):
+    await mess.bot.delete_message(mess.from_user.id, mess.message_id)
+    buttons = [
+        types.InlineKeyboardButton(text="💊 Медпункт", callback_data="input_med"),
+        types.InlineKeyboardButton(text="⚽️ Спортзал", callback_data="input_sport"),
+        types.InlineKeyboardButton(text="👕 М Туалет", callback_data="input_m_wc"),
+        types.InlineKeyboardButton(text="👚 Ж Туалет", callback_data="input_w_wc"),
+    ]
+    keyboard = types.InlineKeyboardMarkup(row_width=2)
+    keyboard.add(*buttons)
+    await mess.bot.send_message(mess.from_user.id, 'Введите номер нужной Вам аудитории\nИли выберите маршрут ниже ⬇️',
+                                reply_markup=keyboard)
+    await BsNavigation.bs_point_a.set()
+
+
+@dp.callback_query_handler(text='input_med', state=BsNavigation.bs_point_a)
+async def input_med(call: types.CallbackQuery, state: FSMContext):
+    photo_id = \
+        BotDB.cursor.execute("SELECT photo_id FROM auds_light_bs_A WHERE name = ?", ("Медпункт1",)).fetchone()[0]
+    await call.bot.send_photo(call.from_user.id, photo_id)
+    await call.message.delete()
+    await state.finish()
+
+
+@dp.callback_query_handler(text='input_m_wc', state=BsNavigation.bs_point_a)
+async def input_m_wc(call: types.CallbackQuery, state: FSMContext):
+    photo_id = \
+        BotDB.cursor.execute("SELECT photo_id FROM auds_light_bs_A WHERE name = ?", ("МТуалет1",)).fetchone()[0]
+    await call.bot.send_photo(call.from_user.id, photo_id)
+    await call.message.delete()
+    await state.finish()
+
+
+@dp.callback_query_handler(text='input_w_wc', state=BsNavigation.bs_point_a)
+async def input_w_wc(call: types.CallbackQuery, state: FSMContext):
+    photo_id = \
+        BotDB.cursor.execute("SELECT photo_id FROM auds_light_bs_A WHERE name = ?", ("ЖТуалет1",)).fetchone()[0]
+    await call.bot.send_photo(call.from_user.id, photo_id)
+    await call.message.delete()
+    await state.finish()
+
+
+@dp.callback_query_handler(text='input_sport', state=BsNavigation.bs_point_a)
+async def input_sport(call: types.CallbackQuery, state: FSMContext):
+    photo_id = \
+        BotDB.cursor.execute("SELECT photo_id FROM auds_light_bs_A WHERE name = ?", ("Спортзал1",)).fetchone()[0]
+    await call.bot.send_photo(call.from_user.id, photo_id)
+    await call.message.delete()
+    await state.finish()
+
+
+@dp.message_handler(state=BsNavigation.bs_point_a)
+async def bs_travel(mess: types.Message, state: FSMContext):
+    if mess.text == "🔻 Маршрут (БС)":
+        await mess.bot.delete_message(mess.from_user.id, mess.message_id)
+        buttons = [
+            types.InlineKeyboardButton(text="💊 Медпункт", callback_data="input_med"),
+            types.InlineKeyboardButton(text="⚽️ Спортзал", callback_data="input_sport"),
+            types.InlineKeyboardButton(text="👕 М Туалет", callback_data="input_m_wc"),
+            types.InlineKeyboardButton(text="👚 Ж Туалет", callback_data="input_w_wc"),
+        ]
+        keyboard = types.InlineKeyboardMarkup(row_width=2)
+        keyboard.add(*buttons)
+        await mess.bot.send_message(mess.from_user.id,
+                                    'Введите номер нужной Вам аудитории\nИли выберите маршрут ниже ⬇️')
+        await BsNavigation.bs_point_a.set()
+    elif mess.text == "📖 Информация (БС)":
+        await mess.bot.delete_message(mess.from_user.id, mess.message_id)
+        await mess.bot.send_message(mess.from_user.id, bs_info_text)
+    elif mess.text == "🏠 Главная":
+        await mess.bot.send_message(mess.from_user.id, "Выберите действие", reply_markup=k.start_stud_keyboard)
+    else:
+        await mess.bot.delete_message(mess.from_user.id, mess.message_id)
+        photos = BotDB.cursor.execute("SELECT * FROM auds_light_bs_A WHERE name = ?", (mess.text,)).fetchall()
+        if len(photos) == 0:
+            await mess.bot.send_message(mess.from_user.id, "Неверная аудитория. Начните заново ❌")
+        elif len(photos) == 1:
+            await mess.bot.send_photo(mess.from_user.id, photos[0][2])
+    await state.finish()
+
+
+"""
+старая версия
+class BsNavigation(StatesGroup):
     bs_point_b_input = State()
     bs_point_b_audit = State()
+
 
 def navigate(text, forward, min_left, max_left, min_right, max_right, none) -> str:
     def_travel = ''
@@ -26,6 +130,7 @@ def navigate(text, forward, min_left, max_left, min_right, max_right, none) -> s
         else:
             def_travel = 'error'
     return def_travel
+
 
 @dp.message_handler(lambda message: message.text == "Большая Семёновская (БС)", state=None)
 async def bs_selected(mess: types.Message):
@@ -65,26 +170,31 @@ async def bs_nav_input(call: types.CallbackQuery):
     keyboard = types.InlineKeyboardMarkup(row_width=2)
     keyboard.add(*buttons)
     await call.message.delete()
-    await call.bot.send_message(call.from_user.id, 'Введите номер нужной Вам аудитории\nИли выберите маршрут ниже ⬇️', reply_markup=keyboard)
+    await call.bot.send_message(call.from_user.id, 'Введите номер нужной Вам аудитории\nИли выберите маршрут ниже ⬇️',
+                                reply_markup=keyboard)
     await BsNavigation.bs_point_b_input.set()
 
+
 @dp.callback_query_handler(text='input_med', state=BsNavigation.bs_point_b_input)
-async def input_med(call: types.CallbackQuery, state:FSMContext):
+async def input_med(call: types.CallbackQuery, state: FSMContext):
     travel = "1. Пройдите налево к лестнице и поднимитесь на 1 этаж ⤴️\n" \
              "2. Поверните налево ⬅️\n" \
              "3. Пройдите вперед ⬆️\n" \
              "4. Пройдите к аудитории, показанной на карте ✅"
     time = int(datetime.now().strftime("%H"))
     if (time > 8) and (time < 20):
-        photo_id = BotDB.cursor.execute("SELECT photo_id FROM auds_light_bs_A WHERE name = ?", ("Медпункт1",)).fetchone()[0]
+        photo_id = \
+        BotDB.cursor.execute("SELECT photo_id FROM auds_light_bs_A WHERE name = ?", ("Медпункт1",)).fetchone()[0]
     else:
-        photo_id = BotDB.cursor.execute("SELECT photo_id FROM auds_dark_bs_A WHERE name = ?", ("Медпункт1",)).fetchone()[0]
+        photo_id = \
+        BotDB.cursor.execute("SELECT photo_id FROM auds_dark_bs_A WHERE name = ?", ("Медпункт1",)).fetchone()[0]
     await call.bot.send_photo(call.from_user.id, photo_id, travel)
     await call.message.delete()
     await state.finish()
 
+
 @dp.callback_query_handler(text='input_sport', state=BsNavigation.bs_point_b_input)
-async def input_med(call: types.CallbackQuery, state:FSMContext):
+async def input_med(call: types.CallbackQuery, state: FSMContext):
     travel = "1. Пройдите налево к лестнице и поднимитесь на 1 этаж ⤴️\n" \
              "2. Поверните налево ⬅️\n" \
              "3. Пройдите вперед до правого коридора ⬆️\n" \
@@ -93,15 +203,18 @@ async def input_med(call: types.CallbackQuery, state:FSMContext):
              "6. Пройдите к аудитории, показанной на карте ✅"
     time = int(datetime.now().strftime("%H"))
     if (time > 8) and (time < 20):
-        photo_id = BotDB.cursor.execute("SELECT photo_id FROM auds_light_bs_A WHERE name = ?", ("Спортзал1",)).fetchone()[0]
+        photo_id = \
+        BotDB.cursor.execute("SELECT photo_id FROM auds_light_bs_A WHERE name = ?", ("Спортзал1",)).fetchone()[0]
     else:
-        photo_id = BotDB.cursor.execute("SELECT photo_id FROM auds_dark_bs_A WHERE name = ?", ("Спортзал1",)).fetchone()[0]
+        photo_id = \
+        BotDB.cursor.execute("SELECT photo_id FROM auds_dark_bs_A WHERE name = ?", ("Спортзал1",)).fetchone()[0]
     await call.bot.send_photo(call.from_user.id, photo_id, travel)
     await call.message.delete()
     await state.finish()
 
+
 @dp.callback_query_handler(text='input_m_wc', state=BsNavigation.bs_point_b_input)
-async def input_med(call: types.CallbackQuery, state:FSMContext):
+async def input_med(call: types.CallbackQuery, state: FSMContext):
     travel = "1. Пройдите налево к лестнице и поднимитесь на 1 этаж ⤴️\n" \
              "2. Поверните направо ➡️\n" \
              "3. Пройдите вперед до упора ⬆️\n" \
@@ -111,29 +224,31 @@ async def input_med(call: types.CallbackQuery, state:FSMContext):
     time = int(datetime.now().strftime("%H"))
     if (time > 8) and (time < 20):
         photo_id = \
-        BotDB.cursor.execute("SELECT photo_id FROM auds_light_bs_A WHERE name = ?", ("МТуалет1",)).fetchone()[0]
+            BotDB.cursor.execute("SELECT photo_id FROM auds_light_bs_A WHERE name = ?", ("МТуалет1",)).fetchone()[0]
     else:
         photo_id = \
-        BotDB.cursor.execute("SELECT photo_id FROM auds_dark_bs_A WHERE name = ?", ("МТуалет1",)).fetchone()[0]
+            BotDB.cursor.execute("SELECT photo_id FROM auds_dark_bs_A WHERE name = ?", ("МТуалет1",)).fetchone()[0]
     await call.bot.send_photo(call.from_user.id, photo_id, travel)
     await call.message.delete()
     await state.finish()
 
+
 @dp.callback_query_handler(text='input_zh_wc', state=BsNavigation.bs_point_b_input)
-async def input_med(call: types.CallbackQuery, state:FSMContext):
+async def input_med(call: types.CallbackQuery, state: FSMContext):
     travel = "1. Пройдите налево к лестнице и поднимитесь на 1 этаж ⤴️\n" \
              "2. Поверните налево ⬅️\n" \
              "3. Пройдите к аудитории, показанной на карте ✅"
     time = int(datetime.now().strftime("%H"))
     if (time > 8) and (time < 20):
         photo_id = \
-        BotDB.cursor.execute("SELECT photo_id FROM auds_light_bs_A WHERE name = ?", ("ЖТуалет1",)).fetchone()[0]
+            BotDB.cursor.execute("SELECT photo_id FROM auds_light_bs_A WHERE name = ?", ("ЖТуалет1",)).fetchone()[0]
     else:
         photo_id = \
-        BotDB.cursor.execute("SELECT photo_id FROM auds_dark_bs_A WHERE name = ?", ("ЖТуалет1",)).fetchone()[0]
+            BotDB.cursor.execute("SELECT photo_id FROM auds_dark_bs_A WHERE name = ?", ("ЖТуалет1",)).fetchone()[0]
     await call.bot.send_photo(call.from_user.id, photo_id, travel)
     await call.message.delete()
     await state.finish()
+
 
 @dp.message_handler(state=BsNavigation.bs_point_b_input)
 async def bs_nav_input_next(mess: types.Message, state: FSMContext):
@@ -189,14 +304,15 @@ async def bs_nav_input_next(mess: types.Message, state: FSMContext):
                                 travel += f"{k}. Пройдите вперед ⬆️\n"
                                 k += 1
                             else:
-                                if (int(audit[1:]) <=9) and (int(audit[1:]) >= 1):
+                                if (int(audit[1:]) <= 9) and (int(audit[1:]) >= 1):
                                     travel += f"{k}. Поверните налево ⬅️\n"
                                     k += 1
                                 elif (int(audit[1:]) >= 11) and (int(audit[1:]) <= 21):
                                     travel += f"{k}. Поверните направо ➡️\n"
                                     k += 1
                                 else:
-                                    await mess.bot.send_message(mess.from_user.id, "Неверная аудитория. Начните заново ❌")
+                                    await mess.bot.send_message(mess.from_user.id,
+                                                                "Неверная аудитория. Начните заново ❌")
                                     await state.finish()
                         elif audit[0] == '3':
                             if audit == '316':
@@ -210,7 +326,8 @@ async def bs_nav_input_next(mess: types.Message, state: FSMContext):
                                     travel += f"{k}. Поверните направо ➡️\n"
                                     k += 1
                                 else:
-                                    await mess.bot.send_message(mess.from_user.id, "Неверная аудитория. Начните заново ❌")
+                                    await mess.bot.send_message(mess.from_user.id,
+                                                                "Неверная аудитория. Начните заново ❌")
                                     await state.finish()
                         elif audit[0] == '4':
                             if audit == '415':
@@ -224,7 +341,8 @@ async def bs_nav_input_next(mess: types.Message, state: FSMContext):
                                     travel += f"{k}. Поверните направо ➡️\n"
                                     k += 1
                                 else:
-                                    await mess.bot.send_message(mess.from_user.id, "Неверная аудитория. Начните заново ❌")
+                                    await mess.bot.send_message(mess.from_user.id,
+                                                                "Неверная аудитория. Начните заново ❌")
                                     await state.finish()
                     except:
                         await mess.bot.send_message(mess.from_user.id, "Неверная аудитория. Начните заново ❌")
@@ -249,7 +367,8 @@ async def bs_nav_input_next(mess: types.Message, state: FSMContext):
                     await mess.bot.send_media_group(mess.from_user.id, media)
                 else:
                     photo_id = \
-                        BotDB.cursor.execute("SELECT `photo_id` FROM `auds_light_bs_A` WHERE `name` = ? ", (text,)).fetchone()[
+                        BotDB.cursor.execute("SELECT `photo_id` FROM `auds_light_bs_A` WHERE `name` = ? ",
+                                             (text,)).fetchone()[
                             0]
                     await mess.bot.send_photo(mess.from_user.id, photo_id, travel)
             else:
@@ -270,7 +389,8 @@ async def bs_nav_input_next(mess: types.Message, state: FSMContext):
                     await mess.bot.send_media_group(mess.from_user.id, media)
                 else:
                     photo_id = \
-                        BotDB.cursor.execute("SELECT `photo_id` FROM `auds_dark_bs_A` WHERE `name` = ? ", (text,)).fetchone()[0]
+                        BotDB.cursor.execute("SELECT `photo_id` FROM `auds_dark_bs_A` WHERE `name` = ? ",
+                                             (text,)).fetchone()[0]
                     await mess.bot.send_photo(mess.from_user.id, photo_id, travel)
     await state.finish()
 
@@ -285,3 +405,4 @@ async def bs_marsh_audit(call: types.CallbackQuery):
 @dp.message_handler(state=BsNavigation.bs_point_b_audit)
 async def bs_marsh_audit_next(state: FSMContext):
     await state.finish()
+"""

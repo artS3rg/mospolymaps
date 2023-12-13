@@ -10,7 +10,6 @@ from db import BotDB
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram import types
 
-
 bot = a.Bot(token=cfg.TOKEN, parse_mode="HTML")
 BotDB = BotDB('db.db')
 dp = a.Dispatcher(bot, storage=MemoryStorage())
@@ -19,8 +18,10 @@ start_mess = 'Приветствую тебя, пользователь!\nЭто
              'потеряться в 4 стенах :)\nТакже не забудь подписаться на группу Московского Политеха: \nt.me/mospolytech '
 next_id = 0
 
+
 class StaffLog(StatesGroup):
     log_token = State()
+
 
 @dp.message_handler(commands='start')
 async def start(mess: a.types.Message, next_id=next_id):
@@ -39,7 +40,7 @@ async def start(mess: a.types.Message, next_id=next_id):
             next_id = 0
     else:
         status = \
-        BotDB.cursor.execute("SELECT status FROM users WHERE user_id = ?", (int(mess.from_user.id),)).fetchone()[0]
+            BotDB.cursor.execute("SELECT status FROM users WHERE user_id = ?", (int(mess.from_user.id),)).fetchone()[0]
         if status == 'ban':
             await mess.bot.send_message(mess.from_user.id, "Вы забанены!")
         else:
@@ -104,15 +105,18 @@ async def back_home(mess: a.types.Message):
     await mess.bot.send_message(mess.from_user.id, 'Главный раздел', reply_markup=k.start_stud_keyboard)
 
 
-
 @dp.callback_query_handler(text='start_info', state=None)
 async def start_info(call: types.CallbackQuery):
     await call.message.delete()
     media = types.MediaGroup()
-    media.attach_photo('AgACAgIAAxkBAAIC4mOfkN7DtCGvUUXAH1wFEIoNrd-mAAKBxDEbyEb5SNKXt3b-tnIpAQADAgADeQADLAQ', 'Кружки и секции')
-    media.attach_photo('AgACAgIAAxkBAAIC7GOfkUCQs-WRmL4Dj_C6Domk4ftnAAKHxDEbyEb5SDhPm7KZ_-trAQADAgADeQADLAQ', 'Психологическая помощь')
-    media.attach_photo('AgACAgIAAxkBAAIC7mOfkVpVST3IUVyyzg97ii4FmvKbAAKAxDEbyEb5SLldiansKvs1AQADAgADeQADLAQ', 'Фото на пропускс')
+    media.attach_photo('AgACAgIAAxkBAAIC4mOfkN7DtCGvUUXAH1wFEIoNrd-mAAKBxDEbyEb5SNKXt3b-tnIpAQADAgADeQADLAQ',
+                       'Кружки и секции')
+    media.attach_photo('AgACAgIAAxkBAAIC7GOfkUCQs-WRmL4Dj_C6Domk4ftnAAKHxDEbyEb5SDhPm7KZ_-trAQADAgADeQADLAQ',
+                       'Психологическая помощь')
+    media.attach_photo('AgACAgIAAxkBAAIC7mOfkVpVST3IUVyyzg97ii4FmvKbAAKAxDEbyEb5SLldiansKvs1AQADAgADeQADLAQ',
+                       'Фото на пропускс')
     await bot.send_media_group(call.from_user.id, media=media)
+
 
 if __name__ == "__main__":
     from handlers import dp

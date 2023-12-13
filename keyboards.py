@@ -13,13 +13,19 @@ sections_staff_buttons = BotDB.get_employee_sections() + ["↩ Назад"]
 sections_staff_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
 sections_staff_keyboard.add(*sections_staff_buttons)
 
-navigation_buttons = ["Большая Семёновская (БС)", "🏠 Главная"]
+navigation_buttons = ["Большая Семёновская (БС)", "Прянишникова (ПР)", "🏠 Главная"]
 navigation_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
 navigation_keyboard.add(*navigation_buttons)
 
+# корпусы
 bsCampus_buttons = ["🔻 Маршрут (БС)", "📖 Информация (БС)", "🏠 Главная"]
 bsCampus_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
 bsCampus_keyboard.add(*bsCampus_buttons)
+
+prCampus_buttons = ["🔻 Маршрут (ПР)", "📖 Информация (ПР)", "🏠 Главная"]
+prCampus_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+prCampus_keyboard.add(*prCampus_buttons)
+# корпусы
 
 helper_main_sections_buttons = ["📖 Разделы", "🔎 Поиск", "🏠 Главная", "📚 Расписание"]
 helper_main_sections_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
