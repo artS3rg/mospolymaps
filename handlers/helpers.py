@@ -44,6 +44,8 @@ async def send(mess: a.types.Message):
 @dp.message_handler(lambda message: message.text == "📖 Разделы", state=None)
 async def send(mess: a.types.Message):
     await mess.bot.delete_message(mess.from_user.id, mess.message_id)
+    await mess.bot.send_sticker(mess.from_user.id,
+                                sticker="CAACAgIAAxkBAAEK-C9lfDeisR8ZGM_dT9MPgz_6feGmFAACJT4AApIf4Uun2gef_kOAmDME")
     status = \
     BotDB.cursor.execute("SELECT stud_status FROM users WHERE user_id = ?", (int(mess.from_user.id),)).fetchone()[0]
     if status == 'stud':
@@ -87,6 +89,7 @@ async def send_answer(callback_query: types.CallbackQuery):
             for link in BotDB.cursor.execute("SELECT links FROM information WHERE id = ?", (answer_id,)).fetchone()[
                 0].split(';'):
                 answer_text += "\n" + link
+        # await callback_query.bot.send_message(callback_query.from_user.id, answer_id)
     else:
         answer_text = BotDB.cursor.execute("SELECT text FROM employee_info WHERE id = ?", (answer_id,)).fetchone()[0] + "\n"
         if BotDB.cursor.execute("SELECT links FROM employee_info WHERE id = ?", (answer_id,)).fetchone()[0] is not None:
@@ -205,6 +208,8 @@ async def search(mess: types.Message, state: FSMContext):
             kolvo = 0
         if len(keyboard["inline_keyboard"]) == 0:
             await mess.bot.send_message(mess.from_user.id, 'Извините, я не смог ничего найти :(')
+            await mess.bot.send_sticker(mess.from_user.id,
+                                        sticker="CAACAgIAAxkBAAEK-DFlfDgpMXvrUY79yXIuwMQdcNAwzAAC8EAAAp_W4EvdvcQMLHyIYjME")
             await state.finish()
             await mess.bot.send_message(mess.from_user.id, 'Введите текст для поиска',
                                         reply_markup=k.search_back_keyboard)
