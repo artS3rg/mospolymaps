@@ -29,7 +29,7 @@ class BotDB:
 
     def add_idea(self, user_id, login, text):
         """Добавляем новую идею в базу"""
-        self.cursor.execute("INSERT INTO `ideas` (`user_id`, `login`, `idea`, `status`) VALUES (?, ?, ?, ?)",
+        self.cursor.execute("INSERT INTO ideas (user_id, login, idea, status) VALUES (?, ?, ?, ?)",
                             (user_id, login, text, 'wait'))
         return self.conn.commit()
 
