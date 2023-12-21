@@ -18,12 +18,12 @@ class BotDB:
 
     def get_user_stud(self, user_id):
         """Достаем stud_status юзера в базе по его user_id"""
-        result = self.cursor.execute("SELECT stud_status FROM `users` WHERE user_id = ?", (user_id,))
+        result = self.cursor.execute("SELECT stud_status FROM users WHERE user_id = ?", (user_id,))
         return result.fetchone()[-1]
 
     def add_user(self, user_id, login, status):
         """Добавляем юзера в базу"""
-        self.cursor.execute("INSERT INTO `users` (`user_id`, `login`, `stud_status`) VALUES (?, ?, ?)",
+        self.cursor.execute("INSERT INTO users (user_id, login, stud_status) VALUES (?, ?, ?)",
                             (user_id, login, status))
         return self.conn.commit()
 

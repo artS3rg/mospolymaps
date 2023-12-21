@@ -101,7 +101,7 @@ async def send_answer(callback_query: types.CallbackQuery):
             images_id = BotDB.cursor.execute("SELECT image_id FROM information WHERE id = ?", (answer_id,))\
                 .fetchone()[0].split(';')
 
-        elif BotDB.cursor.execute("SELECT image_id FROM employee_info WHERE id = ?", (answer_id,)).fetchone()[0] is not None:
+        elif BotDB.get_user_stud(callback_query.from_user.id) == 'staff' and BotDB.cursor.execute("SELECT image_id FROM employee_info WHERE id = ?", (answer_id,)).fetchone()[0] is not None:
             images_id = BotDB.cursor.execute("SELECT image_id FROM employee_info WHERE id = ?", (answer_id,)).fetchone()[0].split(';')
 
         if images_id:
@@ -110,7 +110,12 @@ async def send_answer(callback_query: types.CallbackQuery):
                     album.attach_photo(photo=images_id[i], caption=answer_text)
                 else:
                     album.attach_photo(photo=images_id[i])
-        await callback_query.bot.send_media_group(chat_id=callback_query.from_user.id, media=album)
+            await callback_query.bot.send_media_group(chat_id=callback_query.from_user.id, media=album)
+        else:
+            if BotDB.cursor.execute("SELECT buttons FROM information WHERE id = ?", (answer_id,)).fetchone()[0] is not None:
+                await callback_query.bot.send_message(callback_query.from_user.id, answer_text)
+            else:
+                raise Exception("Нет информации")
 
         # дополнительные кнопки
         if BotDB.get_user_stud(callback_query.from_user.id) == 'stud':
