@@ -1,6 +1,8 @@
 # Код для помощника
 
 import aiogram as a
+
+import Stickers
 import keyboards as k
 from main import dp, BotDB
 from aiogram import types
@@ -30,13 +32,12 @@ async def send(mess: a.types.Message):
     if status == 'ban':
         await mess.bot.send_message(mess.from_user.id, "Вы забанены!")
     else:
-        stud_status = \
-            BotDB.cursor.execute("SELECT stud_status FROM users WHERE user_id = ?",
-                                 (int(mess.from_user.id),)).fetchone()[0]
+        stud_status = BotDB.cursor.execute("SELECT stud_status FROM users WHERE user_id = ?",
+                            (int(mess.from_user.id),)).fetchone()[0]
         if stud_status == 'stud':
             await mess.bot.send_message(mess.from_user.id, 'Выберите действие',
                                         reply_markup=k.helper_main_sections_keyboard)
-        else:
+        elif stud_status == 'staff':
             await mess.bot.send_message(mess.from_user.id, 'Выберите действие',
                                         reply_markup=k.helper_main_sections_stuff_keyboard)
 
@@ -44,28 +45,14 @@ async def send(mess: a.types.Message):
 @dp.message_handler(lambda message: message.text == "📖 Разделы", state=None)
 async def send(mess: a.types.Message):
     await mess.bot.delete_message(mess.from_user.id, mess.message_id)
-    await mess.bot.send_sticker(mess.from_user.id,
-                                sticker="CAACAgIAAxkBAAEK-C9lfDeisR8ZGM_dT9MPgz_6feGmFAACJT4AApIf4Uun2gef_kOAmDME")
     status = \
     BotDB.cursor.execute("SELECT stud_status FROM users WHERE user_id = ?", (int(mess.from_user.id),)).fetchone()[0]
     if status == 'stud':
         await mess.bot.send_message(mess.from_user.id, 'Выберите раздел',
                                     reply_markup=k.informational_sections_keyboard)
-    else:
+    elif status == 'staff':
         await mess.bot.send_message(mess.from_user.id, 'Выберите раздел',
                                     reply_markup=k.sections_staff_keyboard)
-
-
-# Разделы и вопросы для сотрудников
-@dp.message_handler(lambda message: message.text in BotDB.get_employee_sections(), state=None)
-async def send(mess: a.types.Message):
-    await mess.bot.delete_message(mess.from_user.id, mess.message_id)
-    inline_questions = types.InlineKeyboardMarkup()
-    answers = BotDB.get_staff_answers(mess.text)
-    for ans in answers:
-        inline_questions.add(types.InlineKeyboardButton(text=ans[1], callback_data="answer_" + str(ans[0])))
-    await mess.bot.send_message(mess.from_user.id, "Выберите интересующий вас вопрос:", reply_markup=inline_questions)
-
 
 
 # Разделы и вопросы для студентов
@@ -79,6 +66,17 @@ async def send(mess: a.types.Message):
     await mess.bot.send_message(mess.from_user.id, "Выберите интересующий вас вопрос:", reply_markup=inline_questions)
 
 
+# Разделы и вопросы для сотрудников
+@dp.message_handler(lambda message: message.text in BotDB.get_employee_sections(), state=None)
+async def send(mess: a.types.Message):
+    await mess.bot.delete_message(mess.from_user.id, mess.message_id)
+    inline_questions = types.InlineKeyboardMarkup()
+    answers = BotDB.get_staff_answers(mess.text)
+    for ans in answers:
+        inline_questions.add(types.InlineKeyboardButton(text=ans[1], callback_data="answer_" + str(ans[0])))
+    await mess.bot.send_message(mess.from_user.id, "Выберите интересующий вас вопрос:", reply_markup=inline_questions)
+
+
 # Ответ
 @dp.callback_query_handler(Text(startswith='answer_'))
 async def send_answer(callback_query: types.CallbackQuery):
@@ -86,30 +84,32 @@ async def send_answer(callback_query: types.CallbackQuery):
     if BotDB.get_user_stud(callback_query.from_user.id) == 'stud':
         answer_text = BotDB.cursor.execute("SELECT text FROM information WHERE id = ?", (answer_id,)).fetchone()[0] + "\n"
         if BotDB.cursor.execute("SELECT links FROM information WHERE id = ?", (answer_id,)).fetchone()[0] is not None:
-            for link in BotDB.cursor.execute("SELECT links FROM information WHERE id = ?", (answer_id,)).fetchone()[
-                0].split(';'):
+            for link in BotDB.cursor.execute("SELECT links FROM information WHERE id = ?", (answer_id,)).fetchone()[0].split(';'):
                 answer_text += "\n" + link
         # await callback_query.bot.send_message(callback_query.from_user.id, answer_id)
     else:
         answer_text = BotDB.cursor.execute("SELECT text FROM employee_info WHERE id = ?", (answer_id,)).fetchone()[0] + "\n"
         if BotDB.cursor.execute("SELECT links FROM employee_info WHERE id = ?", (answer_id,)).fetchone()[0] is not None:
-            for link in BotDB.cursor.execute("SELECT links FROM employee_info WHERE id = ?", (answer_id,)).fetchone()[
-                0].split(';'):
+            for link in BotDB.cursor.execute("SELECT links FROM employee_info WHERE id = ?", (answer_id,)).fetchone()[0].split(';'):
                 answer_text += "\n" + link
-    album = types.MediaGroup()
 
+    album = types.MediaGroup()
     try:
-        if BotDB.get_user_stud(callback_query.from_user.id) == 'stud':
-            images_id = BotDB.cursor.execute("SELECT image_id FROM information WHERE id = ?", (answer_id,)).fetchone()[
-                0].split(';')
-        else:
-            images_id = BotDB.cursor.execute("SELECT image_id FROM employee_info WHERE id = ?", (answer_id,)).fetchone()[
-                0].split(';')
-        for i in range(len(images_id)):
-            if i == (len(images_id) - 1):
-                album.attach_photo(photo=images_id[i], caption=answer_text)
-            else:
-                album.attach_photo(photo=images_id[i])
+        images_id = []
+        if BotDB.get_user_stud(callback_query.from_user.id) == 'stud' \
+                and BotDB.cursor.execute("SELECT image_id FROM information WHERE id = ?", (answer_id,)).fetchone()[0] is not None:
+            images_id = BotDB.cursor.execute("SELECT image_id FROM information WHERE id = ?", (answer_id,))\
+                .fetchone()[0].split(';')
+
+        elif BotDB.cursor.execute("SELECT image_id FROM employee_info WHERE id = ?", (answer_id,)).fetchone()[0] is not None:
+            images_id = BotDB.cursor.execute("SELECT image_id FROM employee_info WHERE id = ?", (answer_id,)).fetchone()[0].split(';')
+
+        if images_id:
+            for i in range(len(images_id)):
+                if i == (len(images_id) - 1):
+                    album.attach_photo(photo=images_id[i], caption=answer_text)
+                else:
+                    album.attach_photo(photo=images_id[i])
         await callback_query.bot.send_media_group(chat_id=callback_query.from_user.id, media=album)
 
         # дополнительные кнопки
@@ -150,8 +150,10 @@ async def send_answer(callback_query: types.CallbackQuery):
                 await callback_query.bot.send_message(callback_query.from_user.id, "Связанное:",
                                                       reply_markup=inline_questions)
 
-    except Exception:
+    except Exception as e:
         await callback_query.message.answer("Информации пока нет")
+        await callback_query.message.answer(e)
+        await callback_query.bot.send_sticker(callback_query.from_user.id, sticker=Stickers.question)
 
     await callback_query.answer()
 
@@ -208,8 +210,7 @@ async def search(mess: types.Message, state: FSMContext):
             kolvo = 0
         if len(keyboard["inline_keyboard"]) == 0:
             await mess.bot.send_message(mess.from_user.id, 'Извините, я не смог ничего найти :(')
-            await mess.bot.send_sticker(mess.from_user.id,
-                                        sticker="CAACAgIAAxkBAAEK-DFlfDgpMXvrUY79yXIuwMQdcNAwzAAC8EAAAp_W4EvdvcQMLHyIYjME")
+            await mess.bot.send_sticker(mess.from_user.id, sticker=Stickers.sad)
             await state.finish()
             await mess.bot.send_message(mess.from_user.id, 'Введите текст для поиска',
                                         reply_markup=k.search_back_keyboard)

@@ -1,6 +1,7 @@
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import StatesGroup, State
 
+import Stickers
 import config
 import config as cfg
 import aiogram as a
@@ -44,19 +45,19 @@ async def start(mess: a.types.Message, next_id=next_id):
         if status == 'ban':
             await mess.bot.send_message(mess.from_user.id, "Вы забанены!")
         else:
-            if BotDB.get_user_stud(mess.from_user.id) == 'stud':
-                # await mess.bot.send_message(mess.from_user.id, 'Добро пожаловать!', reply_markup=k.start_stud_keyboard)
-                await mess.bot.send_sticker(mess.from_user.id, sticker="CAACAgIAAxkBAAEK-C1lfDYUif4opwqJulwBu3EbHpgX-wACcUYAAgKQ4Uu7PYaghbN-YTME")
-            else:
-                # await mess.bot.send_message(mess.from_user.id, 'Добро пожаловать!', reply_markup=k.start_staff_keyboard)
-                await mess.bot.send_sticker(mess.from_user.id,
-                                            sticker="CAACAgIAAxkBAAEK-C1lfDYUif4opwqJulwBu3EbHpgX-wACcUYAAgKQ4Uu7PYaghbN-YTME")
+            # if BotDB.get_user_stud(mess.from_user.id) == 'stud':
+            # await mess.bot.send_message(mess.from_user.id, 'Добро пожаловать!', reply_markup=k.start_stud_keyboard)
+            # else:
+            # await mess.bot.send_message(mess.from_user.id, 'Добро пожаловать!', reply_markup=k.start_staff_keyboard)
+
+            await mess.bot.send_sticker(mess.from_user.id, sticker=Stickers.hi)
 
 
 @dp.callback_query_handler(text='start_stud', state=None)
 async def start_stud(call: a.types.CallbackQuery):
     await call.message.delete()
-    await call.bot.send_message(call.from_user.id, 'Добро пожаловать!', reply_markup=k.start_stud_keyboard)
+    # await call.bot.send_message(call.from_user.id, 'Добро пожаловать!', reply_markup=k.start_stud_keyboard)
+    await call.bot.send_sticker(call.from_user.id, sticker=Stickers.hi, reply_markup=k.start_stud_keyboard)
     BotDB.add_user(call.from_user.id, call.from_user.full_name, 'stud')
     buttons = [
         types.InlineKeyboardButton(text="Важная информация!", callback_data="start_info"),
@@ -79,6 +80,7 @@ async def start_staff_log(mess: a.types.Message, state: FSMContext):
     if mess.text == config.stud_token:
         await mess.bot.send_message(mess.from_user.id, start_mess)
         await mess.bot.send_message(mess.from_user.id, 'Добро пожаловать!', reply_markup=k.start_staff_keyboard)
+        # await mess.bot.send_sticker(mess.from_user.id, sticker=Stickers.hi)
         BotDB.add_user(mess.from_user.id, mess.from_user.full_name, 'staff')
     else:
         buttons = [

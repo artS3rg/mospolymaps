@@ -8,17 +8,17 @@ class BotDB:
 
     def user_exists(self, user_id):
         """Проверяем, есть ли юзер в базе"""
-        result = self.cursor.execute("SELECT `id` FROM `users` WHERE `user_id` = ?", (user_id,))
+        result = self.cursor.execute("SELECT id FROM users WHERE user_id = ?", (user_id,))
         return bool(len(result.fetchall()))
 
     def get_user_id(self, user_id):
         """Достаем id юзера в базе по его user_id"""
-        result = self.cursor.execute("SELECT `id` FROM `users` WHERE `user_id` = ?", (user_id,))
+        result = self.cursor.execute("SELECT id FROM users WHERE user_id = ?", (user_id,))
         return result.fetchone()[0]
 
     def get_user_stud(self, user_id):
         """Достаем stud_status юзера в базе по его user_id"""
-        result = self.cursor.execute("SELECT `stud_status` FROM `users` WHERE `user_id` = ?", (user_id,))
+        result = self.cursor.execute("SELECT stud_status FROM `users` WHERE user_id = ?", (user_id,))
         return result.fetchone()[-1]
 
     def add_user(self, user_id, login, status):
@@ -35,12 +35,12 @@ class BotDB:
 
     def get_sections(self):
         """Получаем список всех разделов студентов"""
-        result = list(map(lambda x: x[0], self.cursor.execute("SELECT `name` FROM `sections`").fetchall()))[1:]
+        result = list(map(lambda x: x[0], self.cursor.execute("SELECT name FROM sections").fetchall()))[1:]
         return result
 
     def get_employee_sections(self):
         """Получаем список всех разделов работников"""
-        result = list(map(lambda x: x[0], self.cursor.execute("SELECT `name` FROM `employee_sections`").fetchall()))[1:]
+        result = list(map(lambda x: x[0], self.cursor.execute("SELECT name FROM employee_sections").fetchall()))[1:]
         return result
 
     def get_answers(self, section_name):
