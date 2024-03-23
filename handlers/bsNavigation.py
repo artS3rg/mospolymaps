@@ -81,6 +81,7 @@ async def input_sport(call: types.CallbackQuery, state: FSMContext):
 
 @dp.message_handler(state=BsNavigation.bs_point_a)
 async def bs_travel(mess: types.Message, state: FSMContext):
+    global photos
     if mess.text == "🔻 Маршрут (БС)":
         await mess.bot.delete_message(mess.from_user.id, mess.message_id)
         buttons = [
@@ -101,7 +102,10 @@ async def bs_travel(mess: types.Message, state: FSMContext):
         await mess.bot.send_message(mess.from_user.id, "Выберите действие", reply_markup=k.start_stud_keyboard)
     else:
         await mess.bot.delete_message(mess.from_user.id, mess.message_id)
-        photos = BotDB.cursor.execute("SELECT * FROM auds_light_bs_A WHERE name = ?", (mess.text,)).fetchall()
+        if mess.text[0].upper() == "А":
+            photos = BotDB.cursor.execute("SELECT * FROM auds_light_bs_A WHERE name = ?", (mess.text,)).fetchall()
+        elif mess.text[0].upper() == "Н":
+            photos = BotDB.cursor.execute("SELECT * FROM auds_bs_H WHERE name = ?", (mess.text,)).fetchall()
         if len(photos) == 0:
             await mess.bot.send_message(mess.from_user.id, "Неверная аудитория. Начните заново ❌")
         elif len(photos) == 1:

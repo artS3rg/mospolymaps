@@ -99,7 +99,7 @@ async def pr_travel(mess: types.Message, state: FSMContext):
     elif mess.text == "🏠 Главная":
         await mess.bot.send_message(mess.from_user.id, "Выберите действие", reply_markup=k.start_stud_keyboard)
     else:
-        photos = BotDB.cursor.execute("SELECT * FROM auds_pr_2 WHERE name = ?", (mess.text,)).fetchall()
+        photos = BotDB.cursor.execute("SELECT * FROM auds_pr WHERE name = ?", (mess.text,)).fetchall()
         if len(photos) == 0:
             await mess.bot.send_message(mess.from_user.id, "Неверная аудитория. Начните заново ❌")
         elif len(photos) == 1:
