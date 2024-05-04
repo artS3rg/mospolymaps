@@ -45,7 +45,7 @@ async def pr_navigation(mess: types.Message):
 @dp.callback_query_handler(text='input_library', state=PrNavigation.pr_point_a)
 async def input_library(call: types.CallbackQuery, state: FSMContext):
     photo_id = \
-        BotDB.cursor.execute("SELECT photo_id FROM auds_pr_2 WHERE name = ?", ("Библиотека",)).fetchone()[0]
+        BotDB.cursor.execute("SELECT photo_id FROM auds_pr WHERE name = ?", ("Библиотека",)).fetchone()[0]
     await call.bot.send_photo(call.from_user.id, photo_id)
     await call.message.delete()
     await state.finish()
@@ -54,7 +54,7 @@ async def input_library(call: types.CallbackQuery, state: FSMContext):
 @dp.callback_query_handler(text='input_m_wc', state=PrNavigation.pr_point_a)
 async def input_m_wc(call: types.CallbackQuery, state: FSMContext):
     photo_id = \
-        BotDB.cursor.execute("SELECT photo_id FROM auds_pr_2 WHERE name = ?", ("М_Туалет",)).fetchone()[0]
+        BotDB.cursor.execute("SELECT photo_id FROM auds_pr WHERE name = ?", ("М_Туалет",)).fetchone()[0]
     await call.bot.send_photo(call.from_user.id, photo_id)
     await call.message.delete()
     await state.finish()
@@ -63,7 +63,7 @@ async def input_m_wc(call: types.CallbackQuery, state: FSMContext):
 @dp.callback_query_handler(text='input_w_wc', state=PrNavigation.pr_point_a)
 async def input_w_wc(call: types.CallbackQuery, state: FSMContext):
     photo_id = \
-        BotDB.cursor.execute("SELECT photo_id FROM auds_pr_2 WHERE name = ?", ("Ж_Туалет",)).fetchone()[0]
+        BotDB.cursor.execute("SELECT photo_id FROM auds_pr WHERE name = ?", ("Ж_Туалет",)).fetchone()[0]
     await call.bot.send_photo(call.from_user.id, photo_id)
     await call.message.delete()
     await state.finish()
@@ -72,7 +72,7 @@ async def input_w_wc(call: types.CallbackQuery, state: FSMContext):
 @dp.callback_query_handler(text='input_cloakroom', state=PrNavigation.pr_point_a)
 async def input_cloakroom(call: types.CallbackQuery, state: FSMContext):
     photo_id = \
-        BotDB.cursor.execute("SELECT photo_id FROM auds_pr_2 WHERE name = ?", ("Гардероб",)).fetchone()[0]
+        BotDB.cursor.execute("SELECT photo_id FROM auds_pr WHERE name = ?", ("Гардероб",)).fetchone()[0]
     await call.bot.send_photo(call.from_user.id, photo_id)
     await call.message.delete()
     await state.finish()
