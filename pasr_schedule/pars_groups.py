@@ -3,12 +3,17 @@ from time import sleep
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 
 setik = set()
 for i in range(111, 1000):
-    driver = webdriver.Chrome()
+    service = Service(ChromeDriverManager().install())
+
+    # Инициализация WebDriver
+    driver = webdriver.Chrome(service=service)
     driver.get("https://rasp.dmami.ru/")
     sleep(0.5)
     num_group = str(i) #ввод пользователя из тг ботика 222-121 191-331
