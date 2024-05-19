@@ -59,11 +59,11 @@ async def start_stud(call: a.types.CallbackQuery):
     # await call.bot.send_message(call.from_user.id, 'Добро пожаловать!', reply_markup=k.start_stud_keyboard)
     await call.bot.send_sticker(call.from_user.id, sticker=Stickers.hi, reply_markup=k.start_stud_keyboard)
     BotDB.add_user(call.from_user.id, call.from_user.full_name, 'stud')
-    buttons = [
-        types.InlineKeyboardButton(text="Важная информация!", callback_data="start_info"),
-    ]
+    #buttons = [
+    #    types.InlineKeyboardButton(text="Важная информация!", callback_data="start_info"),
+    #]
     keyboard = types.InlineKeyboardMarkup(row_width=2)
-    keyboard.add(*buttons)
+    #keyboard.add(*buttons)
     await call.bot.send_message(call.from_user.id, start_mess, reply_markup=keyboard)
 
 
